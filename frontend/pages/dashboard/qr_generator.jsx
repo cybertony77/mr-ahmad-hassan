@@ -140,8 +140,8 @@ export default function QRGenerator() {
               
               // Create gradient background
               const gradient = ctx.createLinearGradient(0, 0, 0, containerHeight + extraHeight);
-              gradient.addColorStop(0, '#089CAA');
-              gradient.addColorStop(1, '#63BFBF');
+              gradient.addColorStop(0, 'rgb(161, 30, 30)');
+              gradient.addColorStop(1, 'rgb(212, 147, 63)');
               
               const radius = 20; // Smaller radius for compact design
               ctx.fillStyle = gradient;
@@ -249,7 +249,7 @@ export default function QRGenerator() {
           width: 100%;
           margin-bottom: 16px;
           padding: 16px 0;
-          background: linear-gradient(135deg, #1FA8DC 0%, #87CEEB 100%);
+          background: linear-gradient(135deg, #0d8bc7 0%, #5bb8e6 100%);
           color: white;
           border: none;
           border-radius: 12px;
@@ -300,7 +300,7 @@ export default function QRGenerator() {
           visibility: hidden;
         }
         .hidden-qr .qr-container {
-          background: linear-gradient(90deg,rgba(119, 214, 224, 1) 50%, rgba(8, 156, 170, 1) 100%);
+          background: linear-gradient(330deg, rgb(161, 30, 30) 0%, rgb(223, 106, 71) 50%, rgb(212, 147, 63) 100%);
           padding: 10px;
           border-radius: 20px;
           overflow: hidden;
@@ -329,7 +329,7 @@ export default function QRGenerator() {
           flex-direction: column;
           align-items: center;
           justify-content: center;
-          background: linear-gradient(90deg,rgba(119, 214, 224, 1) 50%, rgba(8, 156, 170, 1) 100%);
+          background: linear-gradient(330deg, rgb(161, 30, 30) 0%, rgb(223, 106, 71) 50%, rgba(212, 147, 63, 1) 100%);
           padding: 24px;
           box-shadow: 0 8px 32px rgba(0,0,0,0.1);
           margin-left: auto;
@@ -537,7 +537,7 @@ export default function QRGenerator() {
                 <div className="qr-container">
                   <QRCode
                     id="single-qr-svg"
-                    value={`https://www.facebook.com/share/1AShaU7c3t/?id=${singleId}`}
+                    value={`https://linktr.ee/drahmadhassan1/?id=${singleId}`}
                     size={qrSize}
                     ecLevel="H"
                     logoImage="/logo.png"
@@ -619,7 +619,7 @@ export default function QRGenerator() {
               <div className="qr-container" key={id}>
                 <QRCode
                   id={`hidden-qr-${id}`}
-                  value={`https://www.facebook.com/share/1AShaU7c3t/?id=${id}`}
+                  value={`https://linktr.ee/drahmadhassan1/?id=${id}`}
                   size={qrSize}
                   ecLevel="H"
                   logoImage="/logo.png"

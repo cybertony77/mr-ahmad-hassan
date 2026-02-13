@@ -110,7 +110,7 @@ export default function QRCodeModal({ isOpen, onClose }) {
   };
 
   const qrValue = studentData?.id 
-    ? `https://www.facebook.com/share/1AShaU7c3t/?id=${studentData.id}`
+    ? `https://linktr.ee/drahmadhassan1/?id=${studentData.id}`
     : '';
 
   if (!isOpen) return null;
@@ -171,7 +171,7 @@ export default function QRCodeModal({ isOpen, onClose }) {
           flex-direction: column;
           align-items: center;
           justify-content: center;
-          background: linear-gradient(90deg,rgba(119, 214, 224, 1) 50%, rgba(8, 156, 170, 1) 100%);
+           background: linear-gradient(330deg, rgb(161, 30, 30) 0%, rgb(223, 106, 71) 50%, rgb(212, 147, 63) 100%);
           padding: 24px;
           box-shadow: 0 8px 32px rgba(0,0,0,0.1);
           margin: 0 auto;
