@@ -26,7 +26,9 @@ export default function DaySelect({ selectedDay, onDayChange, required = false, 
           justifyContent: 'space-between',
           alignItems: 'center',
           fontSize: '1rem',
-          color: selectedDay ? '#000000' : '#adb5bd',
+          color: selectedDay ? '#1FA8DC' : '#adb5bd',
+          backgroundColor: selectedDay ? '#f0f8ff' : '#ffffff',
+          fontWeight: selectedDay ? '600' : '400',
           transition: 'all 0.3s ease',
           boxShadow: actualIsOpen ? '0 0 0 3px rgba(31, 168, 220, 0.1)' : 'none'
         }}

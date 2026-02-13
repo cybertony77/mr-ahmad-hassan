@@ -255,6 +255,7 @@ export default async function handler(req, res) {
               age: 1,
               account_state: 1,
               score: 1,
+              payment: 1,
               weeks: 1,
               lessons: 1
             }
@@ -331,6 +332,7 @@ export default async function handler(req, res) {
               account_state: student.account_state || "Activated",
               score: student.score !== null && student.score !== undefined ? student.score : 0,
               email: studentEmail,
+              payment: student.payment || { numberOfSessions: 0, cost: 0, paymentComment: null, date: null },
               weeks: student.weeks || [],
               lessons: student.lessons || {}
             };
@@ -388,6 +390,7 @@ export default async function handler(req, res) {
             age: 1,
             account_state: 1,
             score: 1,
+            payment: 1,
             weeks: 1,
             lessons: 1
           }
@@ -460,6 +463,7 @@ export default async function handler(req, res) {
               account_state: student.account_state || "Activated",
               score: student.score !== null && student.score !== undefined ? student.score : 0,
               email: studentEmail,
+              payment: student.payment || { numberOfSessions: 0, cost: 0, paymentComment: null, date: null },
               weeks: student.weeks || [],
               lessons: student.lessons || {}
             };
@@ -484,8 +488,8 @@ export default async function handler(req, res) {
           return res.status(400).json({ error: 'Student ID is required when WITH_PHISICAL_CARD is enabled' });
         }
         
-        if (!name || !course || !phone || !parents_phone || !main_center || age === undefined || !gender || !school) {
-          return res.status(400).json({ error: 'All fields are required (name, course, phone, parents_phone, main_center, age, gender, school)' });
+        if (!name || !grade || !course || !phone || !parents_phone || !main_center || age === undefined || !gender || !school) {
+          return res.status(400).json({ error: 'All fields are required (name, grade, course, phone, parents_phone, main_center, age, gender, school)' });
         }
         
         // Check if the custom ID is already used
@@ -498,7 +502,7 @@ export default async function handler(req, res) {
       } else {
         // If WITH_PHISICAL_CARD is false, auto-generate ID (last student ID + 1)
         // Ignore id field completely - don't validate it even if it's sent
-        if (!name || !course || !phone || !parents_phone || !main_center || age === undefined || !gender || !school) {
+        if (!name || !grade || !course || !phone || !parents_phone || !main_center || age === undefined || !gender || !school) {
           return res.status(400).json({ error: 'All fields are required' });
         }
         

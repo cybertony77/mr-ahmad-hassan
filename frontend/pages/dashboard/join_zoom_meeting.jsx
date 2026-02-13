@@ -7,6 +7,7 @@ import Title from '../../components/Title';
 import CourseSelect from '../../components/CourseSelect';
 import CourseTypeSelect from '../../components/CourseTypeSelect';
 import PeriodSelect from '../../components/PeriodSelect';
+import StudentLessonSelect from '../../components/StudentLessonSelect';
 
 // Time Input component (hours, minutes, AM/PM using PeriodSelect)
 function TimeInput({ value, onChange, label, accentColor = '#2d8cff' }) {
@@ -163,22 +164,26 @@ export default function JoinZoomMeeting() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [newCourse, setNewCourse] = useState('');
   const [newCourseType, setNewCourseType] = useState('');
+  const [newLesson, setNewLesson] = useState('');
   const [newLink, setNewLink] = useState('');
   const [newDeadline, setNewDeadline] = useState({});
   const [newDateOfStart, setNewDateOfStart] = useState({});
   const [newDateOfEnd, setNewDateOfEnd] = useState({});
   const [newCourseOpen, setNewCourseOpen] = useState(false);
   const [newCourseTypeOpen, setNewCourseTypeOpen] = useState(false);
+  const [newLessonOpen, setNewLessonOpen] = useState(false);
   
   const [editingMeeting, setEditingMeeting] = useState(null);
   const [editCourse, setEditCourse] = useState('');
   const [editCourseType, setEditCourseType] = useState('');
+  const [editLesson, setEditLesson] = useState('');
   const [editLink, setEditLink] = useState('');
   const [editDeadline, setEditDeadline] = useState({});
   const [editDateOfStart, setEditDateOfStart] = useState({});
   const [editDateOfEnd, setEditDateOfEnd] = useState({});
   const [editCourseOpen, setEditCourseOpen] = useState(false);
   const [editCourseTypeOpen, setEditCourseTypeOpen] = useState(false);
+  const [editLessonOpen, setEditLessonOpen] = useState(false);
   
   const [error, setError] = useState('');
   const [showConfirm, setShowConfirm] = useState(false);
@@ -196,6 +201,18 @@ export default function JoinZoomMeeting() {
     refetchOnWindowFocus: true,
     staleTime: 0,
   });
+
+  // Fetch lessons for the lesson select dropdown
+  const { data: lessonsData = [] } = useQuery({
+    queryKey: ['lessons'],
+    queryFn: async () => {
+      const response = await apiClient.get('/api/lessons');
+      return response.data.lessons || [];
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const availableLessons = lessonsData.map(l => l.name || l.lesson || l);
 
   // Create meeting mutation
   const createMutation = useMutation({
@@ -270,6 +287,7 @@ export default function JoinZoomMeeting() {
   const resetAddForm = () => {
     setNewCourse('');
     setNewCourseType('');
+    setNewLesson('');
     setNewLink('');
     setNewDeadline({});
     setNewDateOfStart({});
@@ -279,6 +297,7 @@ export default function JoinZoomMeeting() {
   const resetEditForm = () => {
     setEditCourse('');
     setEditCourseType('');
+    setEditLesson('');
     setEditLink('');
     setEditDeadline({});
     setEditDateOfStart({});
@@ -294,8 +313,8 @@ export default function JoinZoomMeeting() {
   };
 
   const handleAddMeeting = () => {
-    if (!newCourse || !newLink.trim()) {
-      setError('Course and Zoom Link are required');
+    if (!newCourse || !newLesson || !newLink.trim()) {
+      setError('Course, Lesson and Zoom Link are required');
       return;
     }
     
@@ -307,6 +326,7 @@ export default function JoinZoomMeeting() {
     createMutation.mutate({
       course: newCourse,
       courseType: newCourseType || null,
+      lesson: newLesson,
       link: newLink.trim(),
       deadline: cleanTime(newDeadline),
       dateOfStart: cleanTime(newDateOfStart),
@@ -318,6 +338,7 @@ export default function JoinZoomMeeting() {
     setEditingMeeting(meeting);
     setEditCourse(meeting.course || '');
     setEditCourseType(meeting.courseType || '');
+    setEditLesson(meeting.lesson || '');
     setEditLink(meeting.link || '');
     setEditDeadline(meeting.deadline || {});
     setEditDateOfStart(meeting.dateOfStart || {});
@@ -326,8 +347,8 @@ export default function JoinZoomMeeting() {
   };
 
   const handleUpdateMeeting = () => {
-    if (!editCourse || !editLink.trim()) {
-      setError('Course and Zoom Link are required');
+    if (!editCourse || !editLesson || !editLink.trim()) {
+      setError('Course, Lesson and Zoom Link are required');
       return;
     }
     
@@ -341,6 +362,7 @@ export default function JoinZoomMeeting() {
       data: {
         course: editCourse,
         courseType: editCourseType || null,
+        lesson: editLesson,
         link: editLink.trim(),
         deadline: cleanTime(editDeadline),
         dateOfStart: cleanTime(editDateOfStart),
@@ -552,6 +574,11 @@ export default function JoinZoomMeeting() {
                     {meeting.courseType && (
                       <span style={{ color: '#666', fontSize: '0.9rem' }}>
                         <strong>Course Type:</strong> {meeting.courseType}
+                      </span>
+                    )}
+                    {meeting.lesson && (
+                      <span style={{ color: '#666', fontSize: '0.9rem' }}>
+                        <strong>Lesson:</strong> {meeting.lesson}
                       </span>
                     )}
                     {(formatTime(meeting.deadline) || formatTime(meeting.dateOfStart) || formatTime(meeting.dateOfEnd)) && (
@@ -796,6 +823,27 @@ export default function JoinZoomMeeting() {
               </div>
               
               <div className="form-field">
+                <label>Lesson <span className="required-star">*</span></label>
+                <StudentLessonSelect
+                  availableLessons={availableLessons}
+                  selectedLesson={newLesson}
+                  onLessonChange={(lesson) => {
+                    setNewLesson(lesson);
+                    setNewLessonOpen(false);
+                  }}
+                  required
+                  isOpen={newLessonOpen}
+                  onToggle={() => {
+                    setNewLessonOpen(!newLessonOpen);
+                    setNewCourseOpen(false);
+                    setNewCourseTypeOpen(false);
+                  }}
+                  onClose={() => setNewLessonOpen(false)}
+                  placeholder="Select Lesson"
+                />
+              </div>
+
+              <div className="form-field">
                 <label>Zoom Meeting Link <span className="required-star">*</span></label>
                 <input
                   type="url"
@@ -937,6 +985,27 @@ export default function JoinZoomMeeting() {
                 />
               </div>
               
+              <div className="form-field">
+                <label>Lesson <span className="required-star">*</span></label>
+                <StudentLessonSelect
+                  availableLessons={availableLessons}
+                  selectedLesson={editLesson}
+                  onLessonChange={(lesson) => {
+                    setEditLesson(lesson);
+                    setEditLessonOpen(false);
+                  }}
+                  required
+                  isOpen={editLessonOpen}
+                  onToggle={() => {
+                    setEditLessonOpen(!editLessonOpen);
+                    setEditCourseOpen(false);
+                    setEditCourseTypeOpen(false);
+                  }}
+                  onClose={() => setEditLessonOpen(false)}
+                  placeholder="Select Lesson"
+                />
+              </div>
+
               <div className="form-field">
                 <label>Zoom Meeting Link <span className="required-star">*</span></label>
                 <input

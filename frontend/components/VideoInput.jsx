@@ -12,7 +12,7 @@ export default function VideoInput({
   errors,
   showUploadTab,
 }) {
-  const [activeTab, setActiveTab] = useState(video.video_source === 'r2' ? 'upload' : 'youtube');
+  const [activeTab, setActiveTab] = useState(video.video_source === 'r2' && showUploadTab ? 'upload' : 'youtube');
   const [uploadProgress, setUploadProgress] = useState(video.upload_progress || 0);
   const [uploadStatus, setUploadStatus] = useState(video.upload_status || 'idle'); // idle | uploading | done | error
   const [uploadFileName, setUploadFileName] = useState(video.upload_file_name || '');

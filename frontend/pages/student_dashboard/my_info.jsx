@@ -15,6 +15,7 @@ import { useQuery } from '@tanstack/react-query';
 export default function MyInfo() {
   const { data: systemConfig } = useSystemConfig();
   const isScoringEnabled = systemConfig?.scoring_system === true || systemConfig?.scoring_system === 'true';
+  const isPaymentSystemEnabled = systemConfig?.payment_system === true || systemConfig?.payment_system === 'true';
   
   const containerRef = useRef(null);
   const [error, setError] = useState("");
@@ -784,6 +785,42 @@ export default function MyInfo() {
                 <div className="detail-label">School</div>
                 <div className="detail-value">{student.school || 'N/A'}</div>
               </div>
+              {isPaymentSystemEnabled && (
+                <div className="detail-item">
+                  <div className="detail-label">Remaining Number of Sessions</div>
+                  <div className="detail-value" style={{ 
+                    color: (() => {
+                      const sessions = student?.payment?.numberOfSessions || 0;
+                      if (sessions <= 2) return '#dc3545';
+                      if (sessions <= 5) return '#ffc107';
+                      if (sessions <= 8) return '#28a745';
+                      return '#1FA8DC';
+                    })(),
+                    fontWeight: 'bold',
+                    fontSize: '16px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    fontFamily: 'system-ui, -apple-system, sans-serif'
+                  }}>
+                    <span style={{ 
+                      fontSize: '18px', 
+                      fontWeight: '800',
+                      lineHeight: '1.2'
+                    }}>
+                      {(student?.payment?.numberOfSessions || 0)}
+                    </span>
+                    <span style={{ 
+                      fontSize: '17px', 
+                      fontWeight: '600',
+                      opacity: '0.9',
+                      textTransform: 'lowercase'
+                    }}>
+                      sessions
+                    </span>
+                  </div>
+                </div>
+              )}
               {isScoringEnabled && (
               <div className="detail-item" style={{ borderLeft: '4px solid #f59e0b' }}>
                 <div className="detail-label">SCORE</div>

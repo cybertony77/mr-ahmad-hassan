@@ -27,9 +27,9 @@ export default function RoleSelect({ selectedRole, onRoleChange, required = fals
           justifyContent: 'space-between',
           alignItems: 'center',
           fontSize: '1rem',
-          color: selectedRole ? selectedRole ? '#1FA8DC' : '#000000' : '#adb5bd',
-          backgroundColor: selectedRole ? selectedRole ? '#f0f8ff' : '#ffffff' : '#ffffff',
-          fontWeight: selectedRole ? selectedRole ? '600' : '400' : '400',
+          color: selectedRole ? '#1FA8DC' : '#adb5bd',
+          backgroundColor: selectedRole ? '#f0f8ff' : '#ffffff',
+          fontWeight: selectedRole ? '600' : '400',
           transition: 'all 0.3s ease',
           boxShadow: actualIsOpen ? '0 0 0 3px rgba(31, 168, 220, 0.1)' : 'none'
         }}

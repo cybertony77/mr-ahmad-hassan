@@ -136,6 +136,7 @@ export default async function handler(req, res) {
         link: meeting.link,
         course: meeting.course,
         courseType: meeting.courseType,
+        lesson: meeting.lesson || null,
         deadline: meeting.deadline,
         dateOfStart: meeting.dateOfStart,
         dateOfEnd: meeting.dateOfEnd

@@ -1016,42 +1016,6 @@ export default function StudentInfo() {
                 <div className="detail-label">Course Type</div>
                 <div className="detail-value">{currentStudent.courseType || 'N/A'}</div>
               </div>
-              {isPaymentSystemEnabled && hasAuthToken && currentStudent?.payment?.numberOfSessions !== undefined && (
-                <div className="detail-item">
-                  <div className="detail-label">Available Number of Sessions</div>
-                  <div className="detail-value" style={{ 
-                    color: (() => {
-                      const sessions = currentStudent.payment?.numberOfSessions || 0;
-                      if (sessions <= 2) return '#dc3545'; // red
-                      if (sessions <= 5) return '#ffc107'; // yellow
-                      if (sessions <= 8) return '#28a745'; // green
-                      return '#1FA8DC'; // blue (>= 9)
-                    })(),
-                    fontWeight: 'bold',
-                    fontSize: '16px',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    fontFamily: 'system-ui, -apple-system, sans-serif'
-                  }}>
-                    <span style={{ 
-                      fontSize: '18px', 
-                      fontWeight: '800',
-                      lineHeight: '1.2'
-                    }}>
-                      {(currentStudent.payment?.numberOfSessions || 0)}
-                    </span>
-                    <span style={{ 
-                      fontSize: '17px', 
-                      fontWeight: '600',
-                      opacity: '0.9',
-                      textTransform: 'lowercase'
-                    }}>
-                      sessions
-                    </span>
-                  </div>
-                </div>
-              )}
               {currentStudent?.age && (
                 <div className="detail-item">
                   <div className="detail-label">Age</div>
@@ -1076,6 +1040,42 @@ export default function StudentInfo() {
                 <div className="detail-label">School</div>
                 <div className="detail-value">{currentStudent.school || 'N/A'}</div>
                 </div>
+              {isPaymentSystemEnabled && (
+                <div className="detail-item">
+                  <div className="detail-label">Remaining Number of Sessions</div>
+                  <div className="detail-value" style={{ 
+                    color: (() => {
+                      const sessions = currentStudent?.payment?.numberOfSessions || 0;
+                      if (sessions <= 2) return '#dc3545';
+                      if (sessions <= 5) return '#ffc107';
+                      if (sessions <= 8) return '#28a745';
+                      return '#1FA8DC';
+                    })(),
+                    fontWeight: 'bold',
+                    fontSize: '16px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    fontFamily: 'system-ui, -apple-system, sans-serif'
+                  }}>
+                    <span style={{ 
+                      fontSize: '18px', 
+                      fontWeight: '800',
+                      lineHeight: '1.2'
+                    }}>
+                      {(currentStudent?.payment?.numberOfSessions || 0)}
+                    </span>
+                    <span style={{ 
+                      fontSize: '17px', 
+                      fontWeight: '600',
+                      opacity: '0.9',
+                      textTransform: 'lowercase'
+                    }}>
+                      sessions
+                    </span>
+                  </div>
+                </div>
+              )}
               {isScoringEnabled && (
               <div className="detail-item" style={{ borderLeft: '4px solid #f59e0b' }}>
                 <div className="detail-label">SCORE</div>

@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect } from 'react';
-import Image from 'next/image';
 
 export default function StudentLessonSelect({ 
   availableLessons = [],
@@ -47,24 +46,15 @@ export default function StudentLessonSelect({
           justifyContent: 'space-between',
           alignItems: 'center',
           fontSize: '1rem',
-          color: selectedLesson && selectedLesson !== 'n/a' ? selectedLesson ? '#1FA8DC' : '#000000' : '#adb5bd',
-          backgroundColor: selectedLesson && selectedLesson !== 'n/a' ? selectedLesson ? '#f0f8ff' : '#ffffff' : '#ffffff',
-          fontWeight: selectedLesson && selectedLesson !== 'n/a' ? selectedLesson ? '600' : '400' : '400',
+          color: selectedLesson && selectedLesson !== 'n/a' ? '#1FA8DC' : '#adb5bd',
+          backgroundColor: selectedLesson && selectedLesson !== 'n/a' ? '#f0f8ff' : '#ffffff',
+          fontWeight: selectedLesson && selectedLesson !== 'n/a' ? '600' : '400',
           transition: 'all 0.3s ease',
           boxShadow: isOpen ? '0 0 0 3px rgba(31, 168, 220, 0.1)' : 'none'
         }}
         onClick={onToggle}
       >
         <span>{selectedLesson && selectedLesson !== 'n/a' ? selectedLesson : placeholder}</span>
-        <Image
-          src={isOpen ? "/chevron-down.svg" : "/chevron-right.svg"}
-          alt={isOpen ? "Close" : "Open"}
-          width={20}
-          height={20}
-          style={{
-            transition: 'transform 0.2s ease'
-          }}
-        />
       </div>
       
       {isOpen && (

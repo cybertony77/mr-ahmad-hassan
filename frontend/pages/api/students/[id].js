@@ -119,6 +119,11 @@ export default async function handler(req, res) {
       // Edit student - handle partial updates properly
       const { name, grade, course, courseType, phone, parents_phone, main_center, age, gender, school, main_comment, comment, account_state, score } = req.body;
       
+      // Validate grade is required
+      if (grade !== undefined && (grade === null || grade === '')) {
+        return res.status(400).json({ error: 'Grade is required' });
+      }
+
       // Build update object with only defined values (not null or undefined)
       const update = {};
       

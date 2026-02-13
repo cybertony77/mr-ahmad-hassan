@@ -45,7 +45,9 @@ export default function CenterSelect({ selectedCenter, onCenterChange, required 
           justifyContent: 'space-between',
           alignItems: 'center',
           fontSize: '1rem',
-          color: selectedCenter ? '#000000' : '#adb5bd',
+          color: selectedCenter ? '#1FA8DC' : '#adb5bd',
+          backgroundColor: selectedCenter ? '#f0f8ff' : '#ffffff',
+          fontWeight: selectedCenter ? '600' : '400',
           transition: 'all 0.3s ease',
           boxShadow: actualIsOpen ? '0 0 0 3px rgba(31, 168, 220, 0.1)' : 'none'
         }}

@@ -32,6 +32,7 @@ function loadEnvConfig() {
 const envConfig = loadEnvConfig();
 const MONGO_URI = envConfig.MONGO_URI || process.env.MONGO_URI;
 const DB_NAME = envConfig.DB_NAME || process.env.DB_NAME;
+const SCORING_SYSTEM_ENABLED = envConfig.SYSTEM_SCORING_SYSTEM === 'true' || process.env.SYSTEM_SCORING_SYSTEM === 'true';
 
 // Format date as DD/MM/YYYY
 function formatDate(date) {
@@ -226,6 +227,85 @@ export default async function handler(req, res) {
             console.log('✅ History record created with ID:', historyResult.insertedId);
           } else {
             console.log('ℹ️ History record already exists for student', student_id, 'lesson', lesson);
+          }
+
+          // === SCORING SYSTEM: Apply attendance scoring (status: 'attend') ===
+          if (SCORING_SYSTEM_ENABLED) {
+            try {
+              // Check if 'attend' scoring was already applied for this student + lesson
+              const existingScoringHistory = await db.collection('scoring_system_history').findOne({
+                studentId: student_id,
+                type: 'attendance',
+                lesson: lesson,
+                'data.status': 'attend'
+              });
+
+              if (!existingScoringHistory) {
+                // Call scoring APIs via internal HTTP
+                const protocol = req.headers['x-forwarded-proto'] || 'http';
+                const host = req.headers.host;
+                const baseUrl = `${protocol}://${host}`;
+
+                const headers = { 'Content-Type': 'application/json' };
+                if (req.headers.authorization) {
+                  headers['Authorization'] = req.headers.authorization;
+                }
+                if (req.headers.cookie) {
+                  headers['Cookie'] = req.headers.cookie;
+                }
+
+                // Check previous scoring history for this lesson
+                let previousStatus = null;
+                try {
+                  const historyRes = await fetch(`${baseUrl}/api/scoring/get-last-history`, {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify({
+                      studentId: student_id,
+                      type: 'attendance',
+                      lesson: lesson
+                    })
+                  });
+                  if (historyRes.ok) {
+                    const historyData = await historyRes.json();
+                    if (historyData.found) {
+                      previousStatus = historyData.history?.data?.status || null;
+                    }
+                  }
+                } catch (e) {
+                  console.error('⚠️ Failed to get scoring history:', e);
+                }
+
+                // Apply 'attend' attendance scoring
+                try {
+                  const calcRes = await fetch(`${baseUrl}/api/scoring/calculate`, {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify({
+                      studentId: student_id,
+                      type: 'attendance',
+                      lesson: lesson,
+                      data: {
+                        status: 'attend',
+                        previousStatus: previousStatus
+                      }
+                    })
+                  });
+                  if (calcRes.ok) {
+                    console.log(`[SCORING] Attend score applied for student ${student_id}, lesson "${lesson}" via Online Session`);
+                  } else {
+                    const errData = await calcRes.json().catch(() => ({}));
+                    console.error('⚠️ Scoring calculate failed:', errData);
+                  }
+                } catch (e) {
+                  console.error('⚠️ Failed to apply scoring:', e);
+                }
+              } else {
+                console.log(`[SCORING] Attend scoring already applied for student ${student_id}, lesson "${lesson}" — skipping`);
+              }
+            } catch (scoringErr) {
+              console.error('⚠️ Failed to process scoring for online session attendance:', scoringErr);
+            }
           }
         }
       }

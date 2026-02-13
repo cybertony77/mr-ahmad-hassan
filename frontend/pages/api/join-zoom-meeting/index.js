@@ -63,10 +63,10 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Only one Zoom meeting is allowed. Please edit or delete the existing one.' });
       }
 
-      const { course, courseType, link, deadline, dateOfStart, dateOfEnd } = req.body;
+      const { course, courseType, lesson, link, deadline, dateOfStart, dateOfEnd } = req.body;
 
-      if (!course || !link) {
-        return res.status(400).json({ error: 'Course and Zoom Link are required' });
+      if (!course || !lesson || !link) {
+        return res.status(400).json({ error: 'Course, Lesson and Zoom Link are required' });
       }
 
       if (!link.includes('zoom.us/j/')) {
@@ -76,6 +76,7 @@ export default async function handler(req, res) {
       const newMeeting = {
         course: course.trim(),
         courseType: courseType ? courseType.trim() : null,
+        lesson: lesson.trim(),
         link: link.trim(),
         deadline: deadline || null,
         dateOfStart: dateOfStart || null,
@@ -95,14 +96,14 @@ export default async function handler(req, res) {
       });
     } else if (req.method === 'PUT') {
       // Update zoom meeting
-      const { id, course, courseType, link, deadline, dateOfStart, dateOfEnd } = req.body;
+      const { id, course, courseType, lesson, link, deadline, dateOfStart, dateOfEnd } = req.body;
 
       if (!id) {
         return res.status(400).json({ error: 'Meeting ID is required' });
       }
 
-      if (!course || !link) {
-        return res.status(400).json({ error: 'Course and Zoom Link are required' });
+      if (!course || !lesson || !link) {
+        return res.status(400).json({ error: 'Course, Lesson and Zoom Link are required' });
       }
 
       if (!link.includes('zoom.us/j/')) {
@@ -119,6 +120,7 @@ export default async function handler(req, res) {
       const updateData = {
         course: course.trim(),
         courseType: courseType ? courseType.trim() : null,
+        lesson: lesson.trim(),
         link: link.trim(),
         deadline: deadline || null,
         dateOfStart: dateOfStart || null,

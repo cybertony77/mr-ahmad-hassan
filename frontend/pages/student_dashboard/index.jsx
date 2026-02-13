@@ -425,10 +425,21 @@ export default function StudentDashboard() {
     return () => clearInterval(interval);
   }, [studentId]);
 
-  const handleJoinZoomMeeting = () => {
-    if (zoomMeeting && zoomMeeting.link) {
-      window.open(zoomMeeting.link, '_blank', 'noopener,noreferrer');
+  const handleJoinZoomMeeting = async () => {
+    if (!zoomMeeting || !zoomMeeting.link) return;
+
+    // If meeting has a lesson, record attendance and deduct session before opening
+    if (zoomMeeting.lesson && studentId) {
+      try {
+        await apiClient.post('/api/join-zoom-meeting/attend', {
+          lesson: zoomMeeting.lesson
+        });
+      } catch (err) {
+        console.error('Failed to record zoom attendance:', err);
+      }
     }
+
+    window.open(zoomMeeting.link, '_blank', 'noopener,noreferrer');
   };
 
   const handleJoinWhatsAppGroup = async () => {
@@ -1137,7 +1148,7 @@ export default function StudentDashboard() {
                 </button>
               )}
 
-              {isZoomJoinMeetingEnabled && zoomMeeting && (
+              {isZoomJoinMeetingEnabled && zoomMeeting && (!isPaymentSystemEnabled || (studentData?.payment?.numberOfSessions || 0) >= 1 || (zoomMeeting.lesson && studentData?.lessons?.[zoomMeeting.lesson]?.attended === true)) && (
                 <button
                   className="dashboard-btn zoom-btn"
                   onClick={handleJoinZoomMeeting}

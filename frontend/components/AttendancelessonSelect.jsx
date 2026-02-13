@@ -59,13 +59,14 @@ export default function AttendanceLessonSelect({
           padding: '14px 16px',
           border: actualIsOpen ? '2px solid #1FA8DC' : '2px solid #e9ecef',
           borderRadius: '10px',
-          backgroundColor: '#ffffff',
           cursor: 'pointer',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
+          color: selectedLesson ? '#1FA8DC' : '#adb5bd',
+          backgroundColor: selectedLesson ? '#f0f8ff' : '#ffffff',
+          fontWeight: selectedLesson ? '600' : '400',
           fontSize: '1rem',
-          color: selectedLesson && selectedLesson !== 'n/a' ? '#000000' : '#adb5bd',
           transition: 'all 0.3s ease',
           boxShadow: actualIsOpen ? '0 0 0 3px rgba(31, 168, 220, 0.1)' : 'none'
         }}

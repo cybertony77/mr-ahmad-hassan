@@ -44,7 +44,9 @@ export default function MockExamSelect({ selectedMockExam, onSelectMockExam, pla
           justifyContent: 'space-between',
           alignItems: 'center',
           fontSize: '1rem',
-          color: selectedMockExam ? '#000000' : '#adb5bd',
+          color: selectedMockExam ? '#1FA8DC' : '#adb5bd',
+          backgroundColor: selectedMockExam ? '#f0f8ff' : '#ffffff',
+          fontWeight: selectedMockExam ? '600' : '400',
           transition: 'all 0.3s ease',
           boxShadow: isDropdownOpen ? '0 0 0 3px rgba(31, 168, 220, 0.1)' : 'none'
         }}

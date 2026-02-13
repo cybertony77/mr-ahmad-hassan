@@ -3,7 +3,8 @@ import { useRouter } from "next/router";
 import Image from 'next/image';
 import BackToDashboard from "../../components/BackToDashboard";
 import CenterSelect from "../../components/CenterSelect";
-import GradeSelect from '../../components/CourseSelect';
+import CourseSelect from '../../components/CourseSelect';
+import GradeSelect from '../../components/GradeSelect';
 import CourseTypeSelect from '../../components/CourseTypeSelect';
 import AccountStateSelect from '../../components/AccountStateSelect';
 import GenderSelect from '../../components/GenderSelect';
@@ -45,6 +46,8 @@ export default function AddStudent() {
   const [showQRButton, setShowQRButton] = useState(false);
   const [error, setError] = useState("");
   const [copiedVac, setCopiedVac] = useState(false);
+  const [savedStudentName, setSavedStudentName] = useState(""); // Preserved after form reset for WhatsApp
+  const [savedStudentPhone, setSavedStudentPhone] = useState(""); // Preserved after form reset for WhatsApp
   const [openDropdown, setOpenDropdown] = useState(null); // 'grade', 'center', 'gender', or null
   const [genderDropdownOpen, setGenderDropdownOpen] = useState(false);
   const [idError, setIdError] = useState("");
@@ -232,6 +235,12 @@ export default function AddStudent() {
       return;
     }
     
+    // Validate grade (required)
+    if (!form.grade || form.grade.trim() === '') {
+      setError("Please select a grade");
+      return;
+    }
+
     // Validate course (required)
     if (!form.course || form.course.trim() === '') {
       setError("Please select a course");
@@ -256,7 +265,7 @@ export default function AddStudent() {
     // Course is now separate from grade
     // course: EST/SAT/ACT (from CourseSelect)
     // courseType: basics/advanced (from CourseTypeSelect)
-    // grade: optional field (like "Grade 10") - can be null
+    // grade: required field (like "Grade 10")
     
     // Optional main_comment: send as main_comment field
     const mc = form.comment && form.comment.trim() !== '' ? form.comment.trim() : null;
@@ -296,7 +305,36 @@ export default function AddStudent() {
         setSuccessMessage(`✅ Student added successfully! ID: ${studentId}`);
         setNewId(studentId.toString());
         setVacCode(vac || "");
-        setShowQRButton(true); // Show QR button after successful submission
+        setShowQRButton(true);
+        // Save name & phone for WhatsApp before resetting the form
+        setSavedStudentName(form.name);
+        setSavedStudentPhone(form.phone);
+        // Reset the form
+        setForm({
+          id: "",
+          name: "",
+          age: "",
+          gender: "",
+          grade: "",
+          course: "",
+          courseType: "basics",
+          school: "",
+          homeschooling: false,
+          phone: "",
+          parentsPhone: "",
+          main_center: "",
+          comment: "",
+          account_state: "Activated",
+          payment: {
+            numberOfSessions: 0,
+            cost: 0,
+            paymentComment: null,
+            date: null
+          }
+        });
+        setIdError("");
+        setIdValid(false);
+        setIdChecking(false);
       },
       onError: (err) => {
         setError(err.response?.data?.error || err.message);
@@ -324,14 +362,14 @@ export default function AddStudent() {
       gender: "",
       grade: "",
       course: "",
-          courseType: "basics", // Reset to basics default
+      courseType: "basics",
       school: "",
-          homeschooling: false,
+      homeschooling: false,
       phone: "",
       parentsPhone: "",
       main_center: "",
       comment: "",
-      account_state: "Activated", // Reset to default
+      account_state: "Activated",
       payment: {
         numberOfSessions: 0,
         cost: 0,
@@ -340,12 +378,14 @@ export default function AddStudent() {
       }
     });
     setSuccess(false);
-    setSuccessMessage(""); // Clear success message
+    setSuccessMessage("");
     setNewId("");
     setVacCode("");
     setShowQRButton(false);
     setError("");
     setCopiedVac(false);
+    setSavedStudentName("");
+    setSavedStudentPhone("");
   };
 
   const handleCopyVac = async () => {
@@ -361,7 +401,10 @@ export default function AddStudent() {
   };
 
   const handleSendWhatsApp = () => {
-    if (!form.phone) {
+    const phoneToUse = savedStudentPhone || form.phone;
+    const nameToUse = savedStudentName || form.name;
+
+    if (!phoneToUse) {
       setError('Student phone number not available');
       return;
     }
@@ -372,7 +415,7 @@ export default function AddStudent() {
     }
 
     // Extract first name from full name
-    const firstName = form.name ? form.name.split(' ')[0] : 'Student';
+    const firstName = nameToUse ? nameToUse.split(' ')[0] : 'Student';
     
     // Get current domain from URL
     const domain = typeof window !== 'undefined' ? window.location.origin : '';
@@ -400,8 +443,8 @@ To complete your sign-up, click the link below:
 Best regards
  – ${systemName}`;
 
-    // Use phone number as stored in form (already includes country code from PhoneInput)
-    let phoneNumber = form.phone.replace(/[^0-9]/g, '');
+    // Use saved phone number (already includes country code from PhoneInput)
+    let phoneNumber = phoneToUse.replace(/[^0-9]/g, '');
     
     // Validate phone number exists
     if (!phoneNumber || phoneNumber.length < 3) {
@@ -737,19 +780,18 @@ Best regards
               />
             </div>
             <div className="form-group">
-              <label>Grade (Optional)</label>
-              <input
-                className="form-input"
-                name="grade"
-                placeholder="Enter student's grade (e.g. 1st Secondary)"
-                value={form.grade}
-                onChange={handleChange}
-                autocomplete="off"
+              <label>Grade <span style={{color: 'red'}}>*</span></label>
+              <GradeSelect
+                selectedGrade={form.grade}
+                onGradeChange={(grade) => handleChange({ target: { name: 'grade', value: grade } })}
+                isOpen={openDropdown === 'grade'}
+                onToggle={() => setOpenDropdown(openDropdown === 'grade' ? null : 'grade')}
+                onClose={() => setOpenDropdown(null)}
               />
             </div>
             <div className="form-group">
               <label>Course <span style={{color: 'red'}}>*</span></label>
-              <GradeSelect 
+              <CourseSelect 
                 selectedGrade={form.course} 
                 onGradeChange={(course) => handleChange({ target: { name: 'course', value: course } })} 
                 required 

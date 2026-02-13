@@ -49,7 +49,9 @@ export default function DurationSelect({
           justifyContent: 'space-between',
           alignItems: 'center',
           fontSize: '1rem',
-          color: selectedValue ? '#000000' : '#adb5bd',
+          color: selectedValue ? '#1FA8DC' : '#adb5bd',
+          backgroundColor: selectedValue ? '#f0f8ff' : '#ffffff',
+          fontWeight: selectedValue ? '600' : '400',
           transition: 'all 0.3s ease',
           boxShadow: isOpen ? '0 0 0 3px rgba(31, 168, 220, 0.1)' : 'none'
         }}

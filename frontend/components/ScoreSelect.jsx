@@ -48,9 +48,9 @@ export default function ScoreSelect({ selectedScore, onScoreChange, required = f
           justifyContent: 'space-between',
           alignItems: 'center',
           fontSize: '1rem',
-          color: selectedScore ? selectedScore ? '#1FA8DC' : '#000000' : '#adb5bd',
-          backgroundColor: selectedScore ? selectedScore ? '#f0f8ff' : '#ffffff' : '#ffffff',
-          fontWeight: selectedScore ? selectedScore ? '600' : '400' : '400',
+          color: selectedScore ? '#1FA8DC' : '#adb5bd',
+          backgroundColor: selectedScore ? '#f0f8ff' : '#ffffff',
+          fontWeight: selectedScore ? '600' : '400',
           transition: 'all 0.3s ease',
           boxShadow: actualIsOpen ? '0 0 0 3px rgba(31, 168, 220, 0.1)' : 'none'
         }}

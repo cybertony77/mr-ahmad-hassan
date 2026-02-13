@@ -4,6 +4,7 @@ import Image from 'next/image';
 import CenterSelect from "../../components/CenterSelect";
 import BackToDashboard from "../../components/BackToDashboard";
 import CourseSelect from '../../components/CourseSelect';
+import GradeSelect from '../../components/GradeSelect';
 import CourseTypeSelect from '../../components/CourseTypeSelect';
 import AccountStateSelect from '../../components/AccountStateSelect';
 import GenderSelect from '../../components/GenderSelect';
@@ -665,7 +666,7 @@ export default function EditStudent() {
           
           <form onSubmit={handleEdit}>
             <div className="form-group">
-              <label>Full Name</label>
+              <label>Full Name <span style={{color: 'red'}}>*</span></label>
               <input
                 className="form-input"
                 name="name"
@@ -703,14 +704,13 @@ export default function EditStudent() {
               />
             </div>
             <div className="form-group">
-              <label>Grade</label>
-              <input
-                className="form-input"
-                name="grade"
-                placeholder="Enter student's grade (e.g. 1st Secondary)"
-                value={formData.grade || ''}
-                onChange={handleChange}
-                autocomplete="off"
+              <label>Grade <span style={{color: 'red'}}>*</span></label>
+              <GradeSelect
+                selectedGrade={formData.grade || ''}
+                onGradeChange={(grade) => handleChange({ target: { name: 'grade', value: grade } })}
+                isOpen={openDropdown === 'grade'}
+                onToggle={() => setOpenDropdown(openDropdown === 'grade' ? null : 'grade')}
+                onClose={() => setOpenDropdown(null)}
               />
             </div>
               <div className="form-group">
@@ -814,7 +814,7 @@ export default function EditStudent() {
             <AccountStateSelect
               value={formData.account_state || 'Activated'}
               onChange={(value) => handleChange({ target: { name: 'account_state', value } })}
-              required={false}
+              required={true}
             />
             <div className="form-group">
               <label>Hidden Comment (Optional)</label>

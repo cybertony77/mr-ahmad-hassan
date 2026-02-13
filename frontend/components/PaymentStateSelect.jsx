@@ -62,8 +62,9 @@ const PaymentStateSelect = ({
             justifyContent: 'space-between',
             alignItems: 'center',
             fontSize: '1rem',
-            color: selectedOption ? selectedOption.color : '#adb5bd',
-            backgroundColor: selectedOption ? selectedOption.color ? '#f0f8ff' : '#ffffff' : '#ffffff',
+            color: selectedOption ? '#1FA8DC' : '#adb5bd',
+            backgroundColor: selectedOption ? '#f0f8ff' : '#ffffff',
+            fontWeight: selectedOption ? '600' : '400',
             fontWeight: selectedOption ? selectedOption.color ? '600' : '400' : '400',
             transition: 'all 0.3s ease',
             boxShadow: isOpen ? '0 0 0 3px rgba(31, 168, 220, 0.1)' : 'none'

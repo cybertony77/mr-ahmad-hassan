@@ -18,7 +18,7 @@ export default function Document() {
         <meta name="apple-mobile-web-app-title" content="Dr. Ahmad Hassan Math" />
         <meta name="apple-touch-fullscreen" content="yes" />
         <meta property="og:title" content="Dr. Ahmad Hassan Math American" />
-        <meta property="og:description" content="Dr. Ahmad Hassan Math American, Dr. Ahmad Hassan's students" />
+        <meta property="og:description" content="Dr. Ahmad Hassan Math American students" />
         <meta property="og:image" content="/icons/apple-icon-180.png" />
         <meta property="og:type" content="website" />
         <meta property="og:locale" content="en_US" />
