@@ -554,7 +554,7 @@ export default function SignUp() {
 
       <div className="signup-container">
         <div className="logo-section">
-          <Image src="/logo.png" alt="Logo" width={120} height={120} className="logo-icon" style={{ borderRadius: '25px' }} priority />
+          <Image src="/logo.png" alt="Logo" width={120} height={120} className="logo-icon" style={{ borderRadius: '50%' }} priority />
           <h1 className="title">Sign Up</h1>
           <p className="subtitle">Create new student account</p>
         </div>
