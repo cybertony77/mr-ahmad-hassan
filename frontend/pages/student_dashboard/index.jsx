@@ -425,26 +425,30 @@ export default function StudentDashboard() {
     return () => clearInterval(interval);
   }, [studentId]);
 
-  const handleJoinZoomMeeting = async () => {
+  const handleJoinZoomMeeting = () => {
     if (!zoomMeeting || !zoomMeeting.link) return;
 
-    // If meeting has a lesson, record attendance and deduct session before opening
-    if (zoomMeeting.lesson && studentId) {
-      try {
-        await apiClient.post('/api/join-zoom-meeting/attend', {
-          lesson: zoomMeeting.lesson
-        });
-      } catch (err) {
-        console.error('Failed to record zoom attendance:', err);
-      }
-    }
-
+    // Open the link immediately in the synchronous click context
+    // so the browser doesn't block the popup
     window.open(zoomMeeting.link, '_blank', 'noopener,noreferrer');
+
+    // Record attendance asynchronously (fire-and-forget)
+    if (zoomMeeting.lesson && studentId) {
+      apiClient.post('/api/join-zoom-meeting/attend', {
+        lesson: zoomMeeting.lesson
+      }).catch(err => {
+        console.error('Failed to record zoom attendance:', err);
+      });
+    }
   };
 
   const handleJoinWhatsAppGroup = async () => {
     if (!studentId) return;
     
+    // Open a blank window immediately in the synchronous click context
+    // so the browser doesn't block the popup
+    const newWindow = window.open('about:blank', '_blank');
+
     setWhatsappGroupsLoading(true);
     try {
       const response = await apiClient.get('/api/join-whatsapp-group/student');
@@ -452,15 +456,21 @@ export default function StudentDashboard() {
       console.log('Matching groups:', matchingGroups);
       setWhatsAppGroups(matchingGroups);
       
-      // If only one group, open it directly
+      // If only one group, redirect the already-opened window
       if (matchingGroups.length === 1) {
-        window.open(matchingGroups[0].link, '_blank', 'noopener,noreferrer');
+        if (newWindow) {
+          newWindow.location.href = matchingGroups[0].link;
+        } else {
+          window.open(matchingGroups[0].link, '_blank', 'noopener,noreferrer');
+        }
       } else if (matchingGroups.length > 1) {
-        // If multiple groups, show popup
+        // Multiple groups: close the blank window, show popup for user to choose
+        if (newWindow) newWindow.close();
         console.log('Showing popup for', matchingGroups.length, 'groups');
         setShowWhatsAppPopup(true);
       } else {
-        // No matching groups - show premium popup
+        // No matching groups: close the blank window, show info
+        if (newWindow) newWindow.close();
         setWhatsAppMessageContent({
           type: 'info',
           message: 'No WhatsApp groups available for your course' + (studentData?.main_center ? ', center, and gender' : ' and gender') + '.'
@@ -468,6 +478,8 @@ export default function StudentDashboard() {
         setShowWhatsAppMessagePopup(true);
       }
     } catch (error) {
+      // Close the blank window on error
+      if (newWindow) newWindow.close();
       console.error('Error fetching WhatsApp groups:', error);
       setWhatsAppMessageContent({
         type: 'error',

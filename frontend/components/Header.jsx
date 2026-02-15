@@ -39,10 +39,10 @@ export default function Header() {
           <img
             src="/logo.png"
             alt={`${systemName} Logo`}
-            width={90}
-            height={50}
+            width={60}
+            height={60}
             style={{ 
-              borderRadius: '10%', 
+              borderRadius: '50%', 
               background: 'white', 
               boxShadow: '0 2px 8px rgba(31,168,220,0.10)',
               objectFit: 'cover',

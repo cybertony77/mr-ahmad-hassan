@@ -56,19 +56,9 @@ export default async function handler(req, res) {
       forcePathStyle: true,
     });
 
-    // Get SYSTEM_DOMAIN and build allowed origins list
-    let systemDomain = envConfig.SYSTEM_DOMAIN || process.env.SYSTEM_DOMAIN || '';
-    // Remove trailing slash if present (CORS origins must not have trailing slashes)
-    systemDomain = systemDomain.replace(/\/+$/, '');
-
-    const allowedOrigins = [
-      'http://localhost:3000',
-      'http://localhost:3001',
-    ];
-    if (systemDomain) {
-      allowedOrigins.push(systemDomain);
-    }
-
+    // Use wildcard origin since multiple projects/domains may share the same R2 bucket.
+    // Presigned URLs don't use credential headers, so wildcard is safe and avoids
+    // CORS failures when different domains access the same bucket.
     const command = new PutBucketCorsCommand({
       Bucket: bucketName,
       CORSConfiguration: {
@@ -76,7 +66,7 @@ export default async function handler(req, res) {
           {
             AllowedHeaders: ['*'],
             AllowedMethods: ['GET', 'PUT', 'POST', 'DELETE', 'HEAD'],
-            AllowedOrigins: allowedOrigins,
+            AllowedOrigins: ['*'],
             ExposeHeaders: ['ETag', 'Content-Length', 'Content-Type'],
             MaxAgeSeconds: 86400,
           },

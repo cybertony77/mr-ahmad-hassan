@@ -32,109 +32,6 @@ const whatsappGroupAPI = {
   }
 };
 
-// Custom CourseSelect with "All" option (only for join whatsapp group)
-function CourseSelectWithAll({ selectedCourse, onCourseChange, isOpen, onToggle, onClose }) {
-  const dropdownRef = useRef(null);
-
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        onClose();
-      }
-    };
-
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isOpen, onClose]);
-
-  const handleCourseSelect = (course) => {
-    onCourseChange(course);
-    onClose();
-  };
-
-  const courses = ["EST", "SAT", "ACT", "All"];
-
-  return (
-    <div ref={dropdownRef} style={{ position: 'relative', width: '100%' }}>
-      <div
-        style={{
-          padding: '14px 16px',
-          border: isOpen ? '2px solid #1FA8DC' : '2px solid #e9ecef',
-          borderRadius: '10px',
-          backgroundColor: '#ffffff',
-          cursor: 'pointer',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          fontSize: '1rem',
-          color: selectedCourse ? '#000000' : '#adb5bd',
-          transition: 'all 0.3s ease',
-          boxShadow: isOpen ? '0 0 0 3px rgba(31, 168, 220, 0.1)' : 'none'
-        }}
-        onClick={onToggle}
-      >
-        <span>{selectedCourse || 'Select Course'}</span>
-      </div>
-
-      {isOpen && (
-        <div style={{
-          position: 'absolute',
-          top: '100%',
-          left: 0,
-          right: 0,
-          backgroundColor: '#ffffff',
-          border: '2px solid #e9ecef',
-          borderRadius: '10px',
-          boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
-          zIndex: 1000,
-          maxHeight: '200px',
-          overflowY: 'auto',
-          marginTop: '4px'
-        }}>
-          <div
-            style={{
-              padding: '12px 16px',
-              cursor: 'pointer',
-              borderBottom: '1px solid #f8f9fa',
-              transition: 'background-color 0.2s ease',
-              color: '#dc3545',
-              fontWeight: '500'
-            }}
-            onClick={() => handleCourseSelect('')}
-            onMouseEnter={(e) => e.target.style.backgroundColor = '#fff5f5'}
-            onMouseLeave={(e) => e.target.style.backgroundColor = '#ffffff'}
-          >
-            ✕ Clear selection
-          </div>
-          {courses.map((course) => (
-            <div
-              key={course}
-              style={{
-                padding: '12px 16px',
-                cursor: 'pointer',
-                borderBottom: '1px solid #f8f9fa',
-                transition: 'background-color 0.2s ease',
-                color: '#000000',
-                fontWeight: '400'
-              }}
-              onClick={() => handleCourseSelect(course)}
-              onMouseEnter={(e) => e.target.style.backgroundColor = '#f8f9fa'}
-              onMouseLeave={(e) => e.target.style.backgroundColor = '#ffffff'}
-            >
-              {course}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
 // Custom GenderSelect with "Both" option
 function GenderSelectWithBoth({ selectedGender, onGenderChange, isOpen, onToggle, onClose }) {
   const dropdownRef = useRef(null);
@@ -853,9 +750,9 @@ export default function JoinWhatsappGroup() {
               
               <div className="form-field">
                 <label>Course <span className="required-star">*</span></label>
-                <CourseSelectWithAll
-                  selectedCourse={newCourse}
-                  onCourseChange={(course) => {
+                <CourseSelect
+                  selectedGrade={newCourse}
+                  onGradeChange={(course) => {
                     setNewCourse(course);
                     setNewCourseOpen(false);
                   }}
@@ -867,6 +764,7 @@ export default function JoinWhatsappGroup() {
                     setNewGenderOpen(false);
                   }}
                   onClose={() => setNewCourseOpen(false)}
+                  showAllOption={true}
                 />
               </div>
               
@@ -1012,9 +910,9 @@ export default function JoinWhatsappGroup() {
               
               <div className="form-field">
                 <label>Course <span className="required-star">*</span></label>
-                <CourseSelectWithAll
-                  selectedCourse={editCourse}
-                  onCourseChange={(course) => {
+                <CourseSelect
+                  selectedGrade={editCourse}
+                  onGradeChange={(course) => {
                     setEditCourse(course);
                     setEditCourseOpen(false);
                   }}
@@ -1026,6 +924,7 @@ export default function JoinWhatsappGroup() {
                     setEditGenderOpen(false);
                   }}
                   onClose={() => setEditCourseOpen(false)}
+                  showAllOption={true}
                 />
               </div>
               

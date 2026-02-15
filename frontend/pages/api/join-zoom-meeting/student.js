@@ -104,8 +104,16 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true, meeting: null });
     }
 
+    // Check if the student already attended this meeting's lesson
+    const meetingLesson = meeting.lesson || null;
+    const studentAlreadyAttended = meetingLesson && 
+      student.lessons && 
+      student.lessons[meetingLesson] && 
+      student.lessons[meetingLesson].attended === true;
+
     // Check deadline: if deadline exists and deadline <= now, hide
-    if (meeting.deadline && meeting.deadline.hours && meeting.deadline.minutes && meeting.deadline.period) {
+    // BUT if the student already attended this lesson, don't hide (they may need to rejoin)
+    if (!studentAlreadyAttended && meeting.deadline && meeting.deadline.hours && meeting.deadline.minutes && meeting.deadline.period) {
       const deadlineDate = parseTimeToDate(meeting.deadline);
       if (deadlineDate && deadlineDate <= now) {
         return res.status(200).json({ success: true, meeting: null });

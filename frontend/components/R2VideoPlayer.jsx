@@ -1,43 +1,14 @@
 import { useRef, useEffect, useState } from "react";
-import apiClient from '../lib/axios';
 
 export default function R2VideoPlayer({ r2Key, videoId, onComplete }) {
   const videoRef = useRef(null);
-  const [videoUrl, setVideoUrl] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const hasMarkedComplete = useRef(false);
 
-  // Fetch signed URL on mount
-  useEffect(() => {
-    let cancelled = false;
-
-    async function fetchSignedUrl() {
-      try {
-        setLoading(true);
-        setError(null);
-        const response = await apiClient.post('/api/upload/r2-video-url', { key: r2Key });
-        if (!cancelled) {
-          setVideoUrl(response.data.signedUrl);
-          setLoading(false);
-        }
-      } catch (err) {
-        if (!cancelled) {
-          console.error('Failed to get video URL:', err);
-          setError('Failed to load video. Please try again.');
-          setLoading(false);
-        }
-      }
-    }
-
-    if (r2Key) {
-      fetchSignedUrl();
-    }
-
-    return () => {
-      cancelled = true;
-    };
-  }, [r2Key]);
+  // Build the streaming URL directly — no API call needed.
+  // The browser sends cookies automatically with the <video> GET request,
+  // so the API route can authenticate the user.
+  const videoUrl = r2Key ? `/api/videos/${r2Key}` : null;
 
   // Track video progress and mark complete at 90%
   useEffect(() => {
@@ -48,7 +19,6 @@ export default function R2VideoPlayer({ r2Key, videoId, onComplete }) {
       if (!video.duration || hasMarkedComplete.current) return;
       const percent = (video.currentTime / video.duration) * 100;
 
-      // Mark as complete if >= 90%
       if (percent >= 90) {
         hasMarkedComplete.current = true;
         if (onComplete) {
@@ -67,9 +37,10 @@ export default function R2VideoPlayer({ r2Key, videoId, onComplete }) {
   // Reset completion flag when video changes
   useEffect(() => {
     hasMarkedComplete.current = false;
+    setError(null);
   }, [r2Key]);
 
-  if (loading) {
+  if (!videoUrl) {
     return (
       <div style={{
         width: '100%',
@@ -81,7 +52,7 @@ export default function R2VideoPlayer({ r2Key, videoId, onComplete }) {
         color: '#fff',
         fontSize: '1rem',
       }}>
-        Loading video...
+        No video available
       </div>
     );
   }
@@ -103,17 +74,11 @@ export default function R2VideoPlayer({ r2Key, videoId, onComplete }) {
         <div>{error}</div>
         <button
           onClick={() => {
-            setLoading(true);
             setError(null);
-            apiClient.post('/api/upload/r2-video-url', { key: r2Key })
-              .then(res => {
-                setVideoUrl(res.data.signedUrl);
-                setLoading(false);
-              })
-              .catch(() => {
-                setError('Failed to load video. Please try again.');
-                setLoading(false);
-              });
+            // Force the video element to reload by remounting
+            if (videoRef.current) {
+              videoRef.current.load();
+            }
           }}
           style={{
             padding: '8px 20px',
@@ -140,6 +105,7 @@ export default function R2VideoPlayer({ r2Key, videoId, onComplete }) {
       disablePictureInPicture
       playsInline
       onContextMenu={(e) => e.preventDefault()}
+      onError={() => setError('Failed to load video. Please try again.')}
       style={{
         width: '100%',
         height: 'auto',

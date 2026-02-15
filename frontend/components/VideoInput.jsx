@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 
 export default function VideoInput({
@@ -19,6 +19,18 @@ export default function VideoInput({
   const [uploadError, setUploadError] = useState('');
   const fileInputRef = useRef(null);
   const xhrRef = useRef(null);
+
+  // Sync activeTab when video data changes (e.g. edit page loads session data async)
+  useEffect(() => {
+    if (video.video_source === 'r2' && showUploadTab) {
+      setActiveTab('upload');
+      setUploadStatus(video.upload_status || (video.r2_key ? 'done' : 'idle'));
+      setUploadProgress(video.upload_progress || (video.r2_key ? 100 : 0));
+      setUploadFileName(video.upload_file_name || '');
+    } else {
+      setActiveTab('youtube');
+    }
+  }, [video.video_source, video.r2_key, showUploadTab]);
 
   const handleTabSwitch = (tab) => {
     setActiveTab(tab);
