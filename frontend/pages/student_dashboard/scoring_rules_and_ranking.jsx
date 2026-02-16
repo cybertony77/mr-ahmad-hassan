@@ -63,8 +63,6 @@ export default function ScoringRulesAndRanking() {
 
   const allConditions = conditionsData?.conditions || [];
   const conditions = allConditions.filter((condition) => {
-    if (condition.type === 'homework' && !isHomeworksEnabled) return false;
-    if (condition.type === 'quiz' && !isQuizzesEnabled) return false;
     if (condition.type === 'mock-exam' && !isMockExamsEnabled) return false;
     return true;
   });
