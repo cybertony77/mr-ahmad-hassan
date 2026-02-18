@@ -49,6 +49,10 @@ async function requireAdmin(req) {
 
 export default async function handler(req, res) {
   const { id } = req.query;
+  if (typeof id !== 'string') {
+    return res.status(400).json({ error: 'Invalid ID' });
+  }
+  const safeQueryId = String(id).replace(/[$]/g, '');
   let client;
   try {
     client = await MongoClient.connect(MONGO_URI);
@@ -58,9 +62,8 @@ export default async function handler(req, res) {
     const admin = await requireAdmin(req);
     
     if (req.method === 'GET') {
-      // Get assistant by ID (exclude password for security)
       const assistant = await db.collection('users')
-        .findOne({ id }, { projection: { password: 0 } }); // Exclude password field
+        .findOne({ id: safeQueryId }, { projection: { password: 0 } });
       if (!assistant) return res.status(404).json({ error: 'Assistant not found' });
       res.json({ 
         ...assistant,
@@ -68,17 +71,15 @@ export default async function handler(req, res) {
         ATCA: assistant.ATCA || "no" // Default to no
       });
     } else if (req.method === 'PUT') {
-      // Edit assistant - handle partial updates properly
       const { id: newId, name, phone, email, password, role, account_state, ATCA } = req.body;
       
-      // Build update object with only defined values (not null or undefined)
       const update = {};
       
-      if (name !== undefined && name !== null && name.trim() !== '') {
-        update.name = name;
+      if (name !== undefined && name !== null && typeof name === 'string' && name.trim() !== '') {
+        update.name = name.replace(/[$]/g, '');
       }
-      if (phone !== undefined && phone !== null && phone.trim() !== '') {
-        update.phone = phone;
+      if (phone !== undefined && phone !== null && typeof phone === 'string' && phone.trim() !== '') {
+        update.phone = phone.replace(/[$]/g, '');
       }
       if (email !== undefined) {
         // Validate email format if provided
@@ -92,19 +93,19 @@ export default async function handler(req, res) {
           update.email = email.trim();
         }
       }
-      if (role !== undefined && role !== null && role.trim() !== '') {
-        update.role = role;
+      if (role !== undefined && role !== null && typeof role === 'string' && role.trim() !== '') {
+        update.role = role.replace(/[$]/g, '');
       }
-      if (password !== undefined && password !== null && password.trim() !== '') {
+      if (password !== undefined && password !== null && typeof password === 'string' && password.trim() !== '') {
         update.password = await bcrypt.hash(password, 10);
       }
-      if (newId && newId !== id && newId.trim() !== '') {
-        // Check for unique new ID
-        const exists = await db.collection('users').findOne({ id: newId });
+      if (newId && typeof newId === 'string' && newId !== safeQueryId && newId.trim() !== '') {
+        const safeNewId = String(newId).replace(/[$]/g, '');
+        const exists = await db.collection('users').findOne({ id: safeNewId });
         if (exists) {
           return res.status(409).json({ error: 'Assistant ID already exists' });
         }
-        update.id = newId;
+        update.id = safeNewId;
       }
       if (account_state !== undefined && account_state !== null) {
         update.account_state = account_state;
@@ -121,12 +122,12 @@ export default async function handler(req, res) {
       // Check if password was changed
       const passwordChanged = update.password !== undefined;
       
-      const result = await db.collection('users').updateOne({ id }, { $set: update });
+      const result = await db.collection('users').updateOne({ id: safeQueryId }, { $set: update });
       if (result.matchedCount === 0) return res.status(404).json({ error: 'Assistant not found' });
       
       // Send password change email notification if password was changed
       if (passwordChanged) {
-        const assistant = await db.collection('users').findOne({ id });
+        const assistant = await db.collection('users').findOne({ id: safeQueryId });
         if (assistant && assistant.email) {
           const userName = assistant.name || 'User';
           const userRole = assistant.role || 'assistant';
@@ -142,7 +143,7 @@ export default async function handler(req, res) {
       res.json({ success: true });
     } else if (req.method === 'DELETE') {
       // Delete assistant
-      const result = await db.collection('users').deleteOne({ id });
+      const result = await db.collection('users').deleteOne({ id: safeQueryId });
       if (result.deletedCount === 0) return res.status(404).json({ error: 'Assistant not found' });
       res.json({ success: true });
     } else {

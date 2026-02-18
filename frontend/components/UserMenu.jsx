@@ -276,9 +276,14 @@ export default function UserMenu() {
                   <Image src="/user-circle3.svg" alt="User" width={18} height={18} />
                   ID: {studentData.id}
                 </div>
-                {studentData.grade && (
+                {(studentData.course || studentData.grade) && (
+                  <div style={{ color: '#495057', fontSize: 15, fontWeight: 600, marginBottom: 4 }}>
+                    Course: {studentData.course || studentData.grade}
+                  </div>
+                )}
+                {studentData.courseType && (
                   <div style={{ color: '#495057', fontSize: 15, fontWeight: 600 }}>
-                    Grade: {studentData.grade}
+                    Course Type: {studentData.courseType}
                   </div>
                 )}
               </>
