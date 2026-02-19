@@ -557,7 +557,7 @@ export default function MyQuizzes() {
             fontWeight: '700',
             color: '#212529'
           }}>
-            Quiz Performance by Week
+            Quiz Performance by Lesson
           </h2>
           {isChartLoading ? (
             <div style={{

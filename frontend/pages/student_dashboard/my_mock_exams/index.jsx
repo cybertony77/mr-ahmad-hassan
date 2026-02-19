@@ -453,7 +453,7 @@ export default function MyMockExams() {
           {/* Mock Exams List */}
           {filteredMockExams.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '40px', color: '#6c757d' }}>
-              {mockExams.length === 0 ? '❌ No mock exams available.' : 'No mock exams match your filters.'}
+              {mockExams.length === 0 ? '❌ No mock exams available.' : '❌ No mock exams match your filters.'}
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>

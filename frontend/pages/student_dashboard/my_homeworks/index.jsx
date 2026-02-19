@@ -561,7 +561,7 @@ export default function MyHomeworks() {
             fontWeight: '700',
             color: '#212529'
           }}>
-            Homework Performance by Week
+            Homework Performance by Lesson
           </h2>
           {isChartLoading ? (
             <div style={{
