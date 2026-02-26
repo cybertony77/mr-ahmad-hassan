@@ -73,8 +73,8 @@ export default function MyMockExams() {
       const response = await apiClient.get('/api/online_mock_exams/student');
       return response.data;
     },
-    // No auto refetch interval here; fetch on mount/focus/reconnect only
-    refetchOnWindowFocus: true,
+    // No auto refetch interval here; fetch on mount/reconnect only (no window focus to prevent auto-refresh)
+    refetchOnWindowFocus: false, // Disabled to prevent auto-refresh on window focus
     refetchOnMount: true,
     refetchOnReconnect: true,
   });
@@ -162,8 +162,8 @@ export default function MyMockExams() {
       }
     },
     enabled: !!profile?.id,
-    // No auto refetch interval; rely on focus/mount/reconnect + manual invalidation
-    refetchOnWindowFocus: true,
+    // No auto refetch interval; rely on mount/reconnect + manual invalidation (no window focus to prevent auto-refresh)
+    refetchOnWindowFocus: false, // Disabled to prevent auto-refresh on window focus
     refetchOnMount: true,
     refetchOnReconnect: true,
     retry: 1, // Retry once on failure
