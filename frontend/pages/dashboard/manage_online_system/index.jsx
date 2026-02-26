@@ -14,6 +14,7 @@ export default function ManageOnlineSystem() {
   const isHomeworksEnabled = systemConfig?.homeworks === true || systemConfig?.homeworks === 'true';
   const isQuizzesEnabled = systemConfig?.quizzes === true || systemConfig?.quizzes === 'true';
   const isMockExamsEnabled = systemConfig?.mock_exams === true || systemConfig?.mock_exams === 'true';
+  const isDeviceLimitationsEnabled = systemConfig?.device_limitations === true || systemConfig?.device_limitations === 'true';
   const [accessDenied, setAccessDenied] = useState(false);
 
   useEffect(() => {
@@ -276,7 +277,7 @@ export default function ManageOnlineSystem() {
               onClick={() => router.push("/dashboard/manage_online_system/online_sessions")}
             >
               <Image src="/video.svg" alt="Videos" width={23} height={23} />
-              Online Sessions
+              Recorded Sessions
             </button>
           )}
 
@@ -356,6 +357,16 @@ export default function ManageOnlineSystem() {
             <Image src="/key.svg" alt="Change Password" width={20} height={20} />
             Change Student Account Password
           </button>
+
+          {isDeviceLimitationsEnabled && (
+            <button
+              className="dashboard-btn"
+              onClick={() => router.push("/dashboard/manage_online_system/manage_students_devices")}
+            >
+              <Image src="/settings2.svg" alt="Manage Students Devices" width={20} height={20} />
+              Manage Students Devices
+            </button>
+          )}
 
           <button
             className="dashboard-btn"

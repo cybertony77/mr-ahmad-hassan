@@ -73,11 +73,10 @@ export default function MyMockExams() {
       const response = await apiClient.get('/api/online_mock_exams/student');
       return response.data;
     },
-    refetchInterval: 10 * 60 * 1000, // Auto-refresh every 10 minutes
-    refetchIntervalInBackground: false, // Don't refetch when tab is not active
-    refetchOnWindowFocus: true, // Refetch on window focus
-    refetchOnMount: true, // Refetch on mount
-    refetchOnReconnect: true, // Refetch on reconnect
+    // No auto refetch interval here; fetch on mount/focus/reconnect only
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+    refetchOnReconnect: true,
   });
 
   const mockExams = mockExamsData?.mockExams || [];
@@ -86,6 +85,7 @@ export default function MyMockExams() {
   const [searchInput, setSearchInput] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterMockExam, setFilterMockExam] = useState('');
+  const [notePopup, setNotePopup] = useState(null);
 
   // Get available mock exam options from mock exams
   // The mock exams are already filtered by course/courseType from the API
@@ -162,7 +162,7 @@ export default function MyMockExams() {
       }
     },
     enabled: !!profile?.id,
-    refetchInterval: 10 * 60 * 1000, // Auto-refresh every 10 minutes
+    // No auto refetch interval; rely on focus/mount/reconnect + manual invalidation
     refetchOnWindowFocus: true,
     refetchOnMount: true,
     refetchOnReconnect: true,
@@ -483,6 +483,11 @@ export default function MyMockExams() {
                     <div style={{ fontSize: '1.2rem', fontWeight: '600', marginBottom: '8px' }}>
                       {[mockExam.lesson, mockExam.lesson_name].filter(Boolean).join(' • ')}
                     </div>
+                    {mockExam.mock_exam_type === 'pdf' ? (
+                      <div style={{ padding: '12px 16px', backgroundColor: '#ffffff', border: '2px solid #e9ecef', borderRadius: '8px', fontSize: '0.95rem', color: '#495057', textAlign: 'left', display: 'inline-block', maxWidth: '350px' }}>
+                        <div style={{ fontWeight: '600', marginBottom: '4px' }}>{mockExam.pdf_file_name}</div>
+                      </div>
+                    ) : (
                     <div style={{
                       padding: '12px 16px',
                       backgroundColor: '#ffffff',
@@ -526,9 +531,25 @@ export default function MyMockExams() {
                         )}
                       </div>
                     </div>
+                    )}
                   </div>
-                  <div className="mock-exam-buttons" style={{ display: 'flex', gap: '12px' }}>
+                  <div className="mock-exam-buttons" style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                    {mockExam.mock_exam_type === 'pdf' && mockExam.pdf_url && (
+                      <button onClick={(e) => { e.stopPropagation(); fetch(mockExam.pdf_url).then(r => r.blob()).then(b => { const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = `${mockExam.pdf_file_name || 'file'}.pdf`; a.click(); URL.revokeObjectURL(a.href); }); }} className="me-action-btn"
+                        style={{ padding: '8px 16px', backgroundColor: '#32b750', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '0.9rem', fontWeight: '600', transition: 'all 0.2s ease', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                        <Image src="/pdf.svg" alt="PDF" width={18} height={18} style={{ display: 'inline-block' }} />
+                        Download PDF
+                      </button>
+                    )}
+                    {mockExam.comment && (
+                      <button onClick={(e) => { e.stopPropagation(); setNotePopup(mockExam.comment); }} className="me-action-btn"
+                        style={{ padding: '8px 16px', backgroundColor: '#1FA8DC', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '0.9rem', fontWeight: '600', transition: 'all 0.2s ease', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                        <Image src="/notes4.svg" alt="Notes" width={18} height={18} style={{ display: 'inline-block' }} />
+                        Notes
+                      </button>
+                    )}
                     {(() => {
+                      if (mockExam.mock_exam_type === 'pdf') return null;
                       // If mock exam is completed, show Details and Done buttons
                       if (completedMockExams.has(mockExam._id)) {
                         return (
@@ -671,8 +692,11 @@ export default function MyMockExams() {
           }
           .mock-exam-buttons {
             width: 100%;
+            flex-direction: column;
           }
-          .mock-exam-buttons button {
+          .mock-exam-buttons button,
+          .mock-exam-buttons a,
+          .mock-exam-buttons .me-action-btn {
             width: 100%;
             justify-content: center;
           }
@@ -720,6 +744,27 @@ export default function MyMockExams() {
           }
         }
       `}</style>
+
+      {notePopup && (
+        <div onClick={() => setNotePopup(null)} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '16px' }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ background: 'linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)', borderRadius: '20px', padding: '0', maxWidth: '500px', width: '100%', position: 'relative', boxShadow: '0 25px 60px rgba(0,0,0,0.3)', overflow: 'hidden', maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ background: 'linear-gradient(135deg, #1FA8DC 0%, #17a2b8 100%)', padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <Image src="/notes4.svg" alt="Notes" width={22} height={22} style={{ filter: 'brightness(0) invert(1)' }} />
+                <h3 style={{ margin: 0, fontSize: '1.2rem', color: 'white', fontWeight: '700' }}>Note</h3>
+              </div>
+              <button onClick={() => setNotePopup(null)} style={{ background: '#dc3545', color: 'white', border: 'none', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer', fontSize: '18px', fontWeight: '700', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', padding: 0, lineHeight: 1 }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = '#c82333'; e.currentTarget.style.transform = 'scale(1.1)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = '#dc3545'; e.currentTarget.style.transform = 'scale(1)'; }}
+                onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.95)'}
+                onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1.1)'}>✕</button>
+            </div>
+            <div style={{ padding: '24px', overflowY: 'auto', flex: 1 }}>
+              <div style={{ fontSize: '1rem', lineHeight: '1.8', color: '#495057', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{notePopup}</div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

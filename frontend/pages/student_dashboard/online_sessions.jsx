@@ -249,7 +249,8 @@ export default function OnlineSessions() {
 
       const response = await apiClient.post('/api/vvc/check', {
         VVC: vvc,
-        session_id: sessionId
+        session_id: sessionId,
+        session_lesson: pendingVideo.session.lesson || null
       });
 
       if (response.data.valid) {
@@ -537,7 +538,7 @@ export default function OnlineSessions() {
         <Title backText="Back" href="/student_dashboard">
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <Image src="/video.svg" alt="Videos" width={35} height={35} />
-            Online Sessions
+            Recorded Sessions
           </div>
         </Title>
 

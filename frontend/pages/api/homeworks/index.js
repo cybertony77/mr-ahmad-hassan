@@ -59,7 +59,7 @@ export default async function handler(req, res) {
 
     if (req.method === 'POST') {
       // Create new homework
-      const { lesson_name, timer, questions, lesson, course, courseType, homework_type, deadline_type, deadline_date, book_name, from_page, to_page, shuffle_questions_and_answers, show_details_after_submitting } = req.body;
+      const { lesson_name, timer, questions, lesson, course, courseType, homework_type, deadline_type, deadline_date, book_name, from_page, to_page, shuffle_questions_and_answers, show_details_after_submitting, comment, pdf_file_name, pdf_url } = req.body;
 
       if (!lesson_name || lesson_name.trim() === '') {
         return res.status(400).json({ error: '❌ Lesson name is required' });
@@ -73,12 +73,19 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: '❌ Lesson is required' });
       }
 
-      if (!homework_type || !['questions', 'pages_from_book'].includes(homework_type)) {
-        return res.status(400).json({ error: '❌ Homework type must be "questions" or "pages_from_book"' });
+      if (!homework_type || !['questions', 'pages_from_book', 'pdf'].includes(homework_type)) {
+        return res.status(400).json({ error: '❌ Homework type must be "questions", "pages_from_book", or "pdf"' });
       }
 
       // Validate based on homework type
-      if (homework_type === 'pages_from_book') {
+      if (homework_type === 'pdf') {
+        if (!pdf_file_name || pdf_file_name.trim() === '') {
+          return res.status(400).json({ error: '❌ PDF file name is required' });
+        }
+        if (!pdf_url || pdf_url.trim() === '') {
+          return res.status(400).json({ error: '❌ PDF file is required' });
+        }
+      } else if (homework_type === 'pages_from_book') {
         if (!book_name || book_name.trim() === '') {
           return res.status(400).json({ error: '❌ Book name is required' });
         }
@@ -166,9 +173,13 @@ export default async function handler(req, res) {
         timer: homework_type === 'questions' && timer !== null && timer !== undefined ? parseInt(timer) : null,
         shuffle_questions_and_answers: homework_type === 'questions' ? (shuffle_questions_and_answers === true || shuffle_questions_and_answers === 'true') : false,
         show_details_after_submitting: homework_type === 'questions' ? (show_details_after_submitting === true || show_details_after_submitting === 'true') : false,
+        comment: comment && comment.trim() !== '' ? comment.trim() : null,
       };
 
-      if (homework_type === 'pages_from_book') {
+      if (homework_type === 'pdf') {
+        homework.pdf_file_name = pdf_file_name.trim();
+        homework.pdf_url = pdf_url.trim();
+      } else if (homework_type === 'pages_from_book') {
         homework.book_name = book_name.trim();
         homework.from_page = parseInt(from_page);
         homework.to_page = parseInt(to_page);
@@ -208,7 +219,7 @@ export default async function handler(req, res) {
     if (req.method === 'PUT') {
       // Update homework
       const { id } = req.query;
-      const { lesson_name, timer, questions, lesson, course, courseType, homework_type, deadline_type, deadline_date, book_name, from_page, to_page, shuffle_questions_and_answers, show_details_after_submitting } = req.body;
+      const { lesson_name, timer, questions, lesson, course, courseType, homework_type, deadline_type, deadline_date, book_name, from_page, to_page, shuffle_questions_and_answers, show_details_after_submitting, comment, pdf_file_name, pdf_url } = req.body;
 
       if (!id) {
         return res.status(400).json({ error: '❌ Homework ID is required' });
@@ -226,12 +237,19 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: '❌ Lesson name is required' });
       }
 
-      if (!homework_type || !['questions', 'pages_from_book'].includes(homework_type)) {
-        return res.status(400).json({ error: '❌ Homework type must be "questions" or "pages_from_book"' });
+      if (!homework_type || !['questions', 'pages_from_book', 'pdf'].includes(homework_type)) {
+        return res.status(400).json({ error: '❌ Homework type must be "questions", "pages_from_book", or "pdf"' });
       }
 
       // Validate based on homework type
-      if (homework_type === 'pages_from_book') {
+      if (homework_type === 'pdf') {
+        if (!pdf_file_name || pdf_file_name.trim() === '') {
+          return res.status(400).json({ error: '❌ PDF file name is required' });
+        }
+        if (!pdf_url || pdf_url.trim() === '') {
+          return res.status(400).json({ error: '❌ PDF file is required' });
+        }
+      } else if (homework_type === 'pages_from_book') {
         if (!book_name || book_name.trim() === '') {
           return res.status(400).json({ error: '❌ Book name is required' });
         }
@@ -320,14 +338,18 @@ export default async function handler(req, res) {
         timer: homework_type === 'questions' && timer !== null && timer !== undefined ? parseInt(timer) : null,
         shuffle_questions_and_answers: homework_type === 'questions' ? (shuffle_questions_and_answers === true || shuffle_questions_and_answers === 'true') : false,
         show_details_after_submitting: homework_type === 'questions' ? (show_details_after_submitting === true || show_details_after_submitting === 'true') : false,
+        comment: comment && comment.trim() !== '' ? comment.trim() : null,
       };
 
-      if (homework_type === 'pages_from_book') {
+      if (homework_type === 'pdf') {
+        updateData.pdf_file_name = pdf_file_name.trim();
+        updateData.pdf_url = pdf_url.trim();
+        updateData.$unset = { questions: '', book_name: '', from_page: '', to_page: '' };
+      } else if (homework_type === 'pages_from_book') {
         updateData.book_name = book_name.trim();
         updateData.from_page = parseInt(from_page);
         updateData.to_page = parseInt(to_page);
-        // Remove questions field if switching from questions to pages_from_book
-        updateData.$unset = { questions: '' };
+        updateData.$unset = { questions: '', pdf_file_name: '', pdf_url: '' };
       } else if (homework_type === 'questions') {
         updateData.questions = questions.map(q => {
           const hasText = q.answer_texts && q.answer_texts.length > 0 && q.answer_texts.some(text => text && text.trim() !== '');
@@ -350,12 +372,13 @@ export default async function handler(req, res) {
             question_explanation: q.question_explanation || ''
           };
         });
-        // Remove pages_from_book fields if switching from pages_from_book to questions
         updateData.$unset = { 
           ...(updateData.$unset || {}),
           book_name: '',
           from_page: '',
-          to_page: ''
+          to_page: '',
+          pdf_file_name: '',
+          pdf_url: ''
         };
       }
 

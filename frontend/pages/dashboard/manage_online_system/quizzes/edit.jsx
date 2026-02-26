@@ -16,21 +16,30 @@ export default function EditQuiz() {
   const { id } = router.query;
   const [formData, setFormData] = useState({
     lesson_name: '',
-    deadline_type: 'no_deadline', // 'no_deadline' or 'with_deadline'
+    comment: '',
+    deadline_type: 'no_deadline',
     deadline_date: '',
+    quiz_type: 'questions',
     timer_type: 'no_timer',
     timer: null,
     shuffle_questions_and_answers: false,
     show_details_after_submitting: false,
+    pdf_file_name: '',
+    pdf_url: '',
     questions: [{
       question_text: '',
       question_picture: null,
       answers: ['A', 'B'],
-      answer_texts: ['', ''], // Text for each answer option
+      answer_texts: ['', ''],
       correct_answer: '',
-      question_explanation: '' // Explanation for the question (optional)
+      question_explanation: ''
     }] || []
   });
+  const [activeTab, setActiveTab] = useState('questions');
+  const [pdfUploading, setPdfUploading] = useState(false);
+  const [pdfUploadProgress, setPdfUploadProgress] = useState(0);
+  const [pdfUploadError, setPdfUploadError] = useState('');
+  const pdfFileInputRef = useRef(null);
   const [selectedCourse, setSelectedCourse] = useState('');
   const [courseDropdownOpen, setCourseDropdownOpen] = useState(false);
   const [selectedCourseType, setSelectedCourseType] = useState('');
@@ -75,10 +84,10 @@ export default function EditQuiz() {
       return quiz;
     },
     enabled: !!id,
-    refetchInterval: false, // No auto-refresh - only manual refresh
-    refetchOnWindowFocus: false, // Don't refetch on window focus
-    refetchOnMount: false, // Don't refetch on mount if data exists
-    refetchOnReconnect: false, // Don't refetch on reconnect
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchOnMount: false,
   });
 
   // Fetch all quizzes for duplicate validation
@@ -88,6 +97,10 @@ export default function EditQuiz() {
       const response = await apiClient.get('/api/quizzes');
       return response.data;
     },
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchOnMount: false,
   });
 
   const quizzes = quizzesData?.quizzes || [];
@@ -110,15 +123,22 @@ export default function EditQuiz() {
       setSelectedCourse(quizData.course || '');
       setSelectedCourseType(quizData.courseType || '');
       setSelectedLesson(quizData.lesson || '');
+      const quizType = quizData.quiz_type || 'questions';
+      setActiveTab(quizType);
+
       setFormData({
         lesson_name: quizData.lesson_name || '',
+        comment: quizData.comment || '',
         deadline_type: quizData.deadline_type || (quizData.deadline_date ? 'with_deadline' : 'no_deadline'),
         deadline_date: quizData.deadline_date || '',
+        quiz_type: quizType,
         timer_type: quizData.timer === null || quizData.timer === undefined ? 'no_timer' : 'with_timer',
         timer: quizData.timer || null,
         shuffle_questions_and_answers: quizData.shuffle_questions_and_answers === true || quizData.shuffle_questions_and_answers === 'true' ? true : false,
         show_details_after_submitting: quizData.show_details_after_submitting === true || quizData.show_details_after_submitting === 'true' ? true : false,
-        questions: quizData.questions && Array.isArray(quizData.questions)
+        pdf_file_name: quizData.pdf_file_name || '',
+        pdf_url: quizData.pdf_url || '',
+        questions: quizType === 'questions' && quizData.questions && Array.isArray(quizData.questions)
           ? quizData.questions.map(q => ({
               question_text: q.question_text || '',
               question_picture: q.question_picture || null,
@@ -551,31 +571,39 @@ export default function EditQuiz() {
       newErrors.lesson_name = '❌ Lesson name is required';
     }
 
-    // Validate timer if with timer is selected
-    if (formData.timer_type === 'with_timer') {
-      if (!formData.timer || parseInt(formData.timer) < 1) {
-        newErrors.timer = '❌ Timer must be at least 1 minute';
+    if (formData.quiz_type === 'pdf') {
+      if (!formData.pdf_file_name || formData.pdf_file_name.trim() === '') {
+        newErrors.pdf_file_name = '❌ PDF file name is required';
       }
-    }
-    
-    // Validate questions
-    if (!formData.questions || !Array.isArray(formData.questions) || formData.questions.length === 0) {
-      newErrors.questions = '❌ At least one question is required';
+      if (!formData.pdf_url || formData.pdf_url.trim() === '') {
+        newErrors.pdf_url = '❌ PDF file is required';
+      }
     } else {
-      formData.questions.forEach((q, qIdx) => {
-        // Each question must have at least question text OR image (or both)
-        const hasQuestionText = q.question_text && q.question_text.trim() !== '';
-        const hasQuestionImage = q.question_picture;
-        if (!hasQuestionText && !hasQuestionImage) {
-          newErrors[`question_${qIdx}_text_or_image`] = '❌ Question must have at least question text or image (or both)';
+      // Validate timer if with timer is selected
+      if (formData.timer_type === 'with_timer') {
+        if (!formData.timer || parseInt(formData.timer) < 1) {
+          newErrors.timer = '❌ Timer must be at least 1 minute';
         }
-        if (!q.answers || q.answers.length < 2) {
-          newErrors[`question_${qIdx}_answers`] = '❌ At least 2 answers (A and B) are required';
-        }
-        if (!q.correct_answer) {
-          newErrors[`question_${qIdx}_correct`] = '❌ Please select the correct answer';
-        }
-      });
+      }
+      
+      // Validate questions
+      if (!formData.questions || !Array.isArray(formData.questions) || formData.questions.length === 0) {
+        newErrors.questions = '❌ At least one question is required';
+      } else {
+        formData.questions.forEach((q, qIdx) => {
+          const hasQuestionText = q.question_text && q.question_text.trim() !== '';
+          const hasQuestionImage = q.question_picture;
+          if (!hasQuestionText && !hasQuestionImage) {
+            newErrors[`question_${qIdx}_text_or_image`] = '❌ Question must have at least question text or image (or both)';
+          }
+          if (!q.answers || q.answers.length < 2) {
+            newErrors[`question_${qIdx}_answers`] = '❌ At least 2 answers (A and B) are required';
+          }
+          if (!q.correct_answer) {
+            newErrors[`question_${qIdx}_correct`] = '❌ Please select the correct answer';
+          }
+        });
+      }
     }
 
     // Validate deadline date if with deadline is selected
@@ -644,18 +672,22 @@ export default function EditQuiz() {
     // Prepare data for API
     const submitData = {
       lesson_name: formData.lesson_name.trim(),
+      comment: formData.comment ? formData.comment.trim() : '',
       course: courseTrimmed,
       courseType: courseTypeTrimmed || null,
       lesson: lessonTrimmed,
-      quiz_type: 'questions',
+      quiz_type: formData.quiz_type || 'questions',
       deadline_type: formData.deadline_type,
       deadline_date: formData.deadline_type === 'with_deadline' ? formData.deadline_date : null,
-      timer: formData.timer_type === 'with_timer' ? parseInt(formData.timer) : null,
-      shuffle_questions_and_answers: formData.shuffle_questions_and_answers,
-      show_details_after_submitting: formData.show_details_after_submitting,
+      timer: formData.quiz_type === 'questions' && formData.timer_type === 'with_timer' ? parseInt(formData.timer) : null,
+      shuffle_questions_and_answers: formData.quiz_type === 'questions' ? formData.shuffle_questions_and_answers : false,
+      show_details_after_submitting: formData.quiz_type === 'questions' ? formData.show_details_after_submitting : false,
     };
 
-    if (formData.questions && Array.isArray(formData.questions)) {
+    if (formData.quiz_type === 'pdf') {
+      submitData.pdf_file_name = formData.pdf_file_name.trim();
+      submitData.pdf_url = formData.pdf_url.trim();
+    } else if (formData.questions && Array.isArray(formData.questions)) {
       submitData.questions = formData.questions.map(q => ({
         question_text: q.question_text || '',
         question_picture: q.question_picture,
@@ -867,8 +899,175 @@ export default function EditQuiz() {
               )}
             </div>
 
+            {/* Comment (Optional) */}
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', textAlign: 'left' }}>
+                Comment (Optional)
+              </label>
+              <textarea
+                name="comment"
+                value={formData.comment}
+                onChange={handleInputChange}
+                placeholder="Add a comment or note..."
+                rows={3}
+                style={{
+                  width: '100%',
+                  padding: '12px 16px',
+                  border: '2px solid #e9ecef',
+                  borderRadius: '10px',
+                  fontSize: '1rem',
+                  resize: 'vertical',
+                  fontFamily: 'inherit'
+                }}
+              />
+            </div>
+
+            {/* Tabs Container (Questions / PDF) */}
+            <div style={{ marginBottom: '20px' }}>
+              <div style={{ display: 'flex', gap: '8px', borderBottom: '2px solid #e9ecef', marginBottom: '20px' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveTab('questions');
+                    setFormData({ ...formData, quiz_type: 'questions', pdf_file_name: '', pdf_url: '' });
+                  }}
+                  style={{
+                    padding: '12px 24px',
+                    border: 'none',
+                    borderBottom: activeTab === 'questions' ? '3px solid #1FA8DC' : '3px solid transparent',
+                    backgroundColor: 'transparent',
+                    color: activeTab === 'questions' ? '#1FA8DC' : '#6c757d',
+                    fontWeight: activeTab === 'questions' ? '600' : '500',
+                    cursor: 'pointer',
+                    fontSize: '1rem',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  Questions
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveTab('pdf');
+                    setFormData({
+                      ...formData,
+                      quiz_type: 'pdf',
+                      questions: [{ question_text: '', question_picture: null, answers: ['A', 'B'], answer_texts: ['', ''], correct_answer: '', question_explanation: '' }],
+                      timer_type: 'no_timer',
+                      timer: null
+                    });
+                  }}
+                  style={{
+                    padding: '12px 24px',
+                    border: 'none',
+                    borderBottom: activeTab === 'pdf' ? '3px solid #1FA8DC' : '3px solid transparent',
+                    backgroundColor: 'transparent',
+                    color: activeTab === 'pdf' ? '#1FA8DC' : '#6c757d',
+                    fontWeight: activeTab === 'pdf' ? '600' : '500',
+                    cursor: 'pointer',
+                    fontSize: '1rem',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  PDF
+                </button>
+              </div>
+
+              {/* PDF Content */}
+              {activeTab === 'pdf' && (
+                <div style={{ padding: '20px', border: '2px solid #e9ecef', borderRadius: '12px', backgroundColor: '#f8f9fa' }}>
+                  <div style={{ marginBottom: '16px' }}>
+                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', textAlign: 'left' }}>
+                      File Name <span style={{ color: 'red' }}>*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.pdf_file_name}
+                      onChange={(e) => setFormData({ ...formData, pdf_file_name: e.target.value })}
+                      placeholder="Enter PDF File Name"
+                      style={{ width: '100%', padding: '12px 16px', border: errors.pdf_file_name ? '2px solid #dc3545' : '2px solid #e9ecef', borderRadius: '10px', fontSize: '1rem' }}
+                    />
+                    {errors.pdf_file_name && <div style={{ color: '#dc3545', fontSize: '0.875rem', marginTop: '4px' }}>{errors.pdf_file_name}</div>}
+                  </div>
+                  <div style={{ marginBottom: '16px' }}>
+                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', textAlign: 'left' }}>
+                      Upload PDF <span style={{ color: 'red' }}>*</span>
+                    </label>
+
+                    {!formData.pdf_url && !pdfUploading && !pdfUploadError && (
+                      <div onClick={() => pdfFileInputRef.current?.click()}
+                        style={{ border: errors.pdf_url ? '2px dashed #dc3545' : '2px dashed #ccc', borderRadius: '8px', padding: '32px 20px', textAlign: 'center', cursor: 'pointer', backgroundColor: '#fff', transition: 'border-color 0.2s ease' }}
+                        onMouseOver={(e) => { if (!errors.pdf_url) e.currentTarget.style.borderColor = '#1FA8DC'; }}
+                        onMouseOut={(e) => { if (!errors.pdf_url) e.currentTarget.style.borderColor = '#ccc'; }}>
+                        <div style={{ fontSize: '2rem', marginBottom: '8px', color: '#999' }}>+</div>
+                        <div style={{ color: '#666', fontSize: '0.95rem' }}>Click to select a PDF file</div>
+                        <div style={{ color: '#999', fontSize: '0.8rem', marginTop: '4px' }}>PDF (max 20MB)</div>
+                      </div>
+                    )}
+
+                    {pdfUploading && (
+                      <div style={{ border: '2px solid #1FA8DC', borderRadius: '8px', padding: '20px', backgroundColor: '#fff' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                          <span style={{ color: '#333', fontSize: '0.9rem', fontWeight: '500' }}>Uploading PDF...</span>
+                          <span style={{ color: '#1FA8DC', fontSize: '0.85rem', fontWeight: '600' }}>{pdfUploadProgress}%</span>
+                        </div>
+                        <div style={{ width: '100%', height: '8px', backgroundColor: '#e9ecef', borderRadius: '4px', overflow: 'hidden' }}>
+                          <div style={{ width: `${pdfUploadProgress}%`, height: '100%', backgroundColor: '#1FA8DC', borderRadius: '4px', transition: 'width 0.3s ease' }} />
+                        </div>
+                      </div>
+                    )}
+
+                    {formData.pdf_url && !pdfUploading && (
+                      <div style={{ border: '2px solid #28a745', borderRadius: '8px', padding: '16px 20px', backgroundColor: '#f0fff4', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div>
+                          <div style={{ color: '#28a745', fontWeight: '600', fontSize: '0.9rem' }}>✅ Uploaded successfully</div>
+                          <div style={{ color: '#666', fontSize: '0.85rem', marginTop: '2px' }}>{formData.pdf_file_name || 'PDF file'}</div>
+                        </div>
+                        <button type="button" onClick={() => { setFormData(prev => ({ ...prev, pdf_url: '' })); if (pdfFileInputRef.current) pdfFileInputRef.current.value = ''; }}
+                          style={{ padding: '6px 12px', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '6px', fontSize: '0.8rem', cursor: 'pointer' }}>
+                          ❌ Remove
+                        </button>
+                      </div>
+                    )}
+
+                    {pdfUploadError && !pdfUploading && !formData.pdf_url && (
+                      <div style={{ border: '2px solid #dc3545', borderRadius: '8px', padding: '16px 20px', backgroundColor: '#fff5f5' }}>
+                        <div style={{ color: '#dc3545', fontWeight: '500', fontSize: '0.9rem', marginBottom: '8px' }}>❌ Upload failed: {pdfUploadError}</div>
+                        <button type="button" onClick={() => { setPdfUploadError(''); if (pdfFileInputRef.current) pdfFileInputRef.current.value = ''; }}
+                          style={{ padding: '6px 14px', backgroundColor: '#1FA8DC', color: 'white', border: 'none', borderRadius: '6px', fontSize: '0.85rem', cursor: 'pointer' }}>
+                          Try Again
+                        </button>
+                      </div>
+                    )}
+
+                    <input ref={pdfFileInputRef} type="file" accept=".pdf,application/pdf" style={{ display: 'none' }}
+                      onChange={async (e) => {
+                        const file = e.target.files[0]; if (!file) return;
+                        if (file.type !== 'application/pdf') { setPdfUploadError('Only PDF files are allowed'); return; }
+                        if (file.size > 20 * 1024 * 1024) { setPdfUploadError('File size exceeds 20MB limit'); return; }
+                        setPdfUploadError('');
+                        setPdfUploading(true);
+                        setPdfUploadProgress(0);
+                        try { const reader = new FileReader();
+                          reader.onprogress = (evt) => { if (evt.lengthComputable) setPdfUploadProgress(Math.round((evt.loaded / evt.total) * 30)); };
+                          reader.onload = async () => {
+                            setPdfUploadProgress(30);
+                            try { const response = await apiClient.post('/api/upload/pdf-file', { file: reader.result, fileType: file.type, folder: 'Quizs-PDFs' },
+                              { onUploadProgress: (p) => { if (p.total) setPdfUploadProgress(30 + Math.round((p.loaded / p.total) * 70)); } });
+                              if (response.data.success) { setPdfUploadProgress(100); setFormData(prev => ({ ...prev, pdf_url: response.data.url })); setErrors(prev => { const n = { ...prev }; delete n.pdf_url; return n; }); }
+                            } catch (err) { setPdfUploadError(err.response?.data?.error || 'Failed to upload PDF'); } finally { setPdfUploading(false); } }; reader.readAsDataURL(file);
+                        } catch (err) { setPdfUploadError('Failed to read file'); setPdfUploading(false); }
+                      }}
+                    />
+
+                    {errors.pdf_url && !pdfUploadError && <div style={{ color: '#dc3545', fontSize: '0.875rem', marginTop: '4px' }}>{errors.pdf_url}</div>}
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* Questions Content */}
-            <>
+            {activeTab === 'questions' && <>
                 {/* Deadline Radio */}
                 <div style={{ marginBottom: '20px' }}>
                   <label style={{ display: 'block', marginBottom: '12px', fontWeight: '600', textAlign: 'left' }}>
@@ -1548,7 +1747,7 @@ export default function EditQuiz() {
                     Add Question
                   </button>
                 </div>
-            </>
+            </>}
 
             {/* Error Message */}
             {errors.general && (

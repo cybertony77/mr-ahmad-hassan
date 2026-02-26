@@ -195,22 +195,46 @@ export default function CentersSchedule() {
           <div style={{ textAlign: 'center', padding: '40px' }}>
             <h3 style={{ color: '#666', margin: '0 0 16px 0' }}>No Schedule Found</h3>
             <p style={{ color: '#999', margin: '0 0 16px 0' }}>
-              No centers found with schedule for course: <strong>{studentData.course}</strong>
-              {studentData.courseType && <span> ({studentData.courseType})</span>}
+              No centers found with schedule for course:{' '}
+              <strong>
+                {studentData.courseType && studentData.courseType.toLowerCase() === 'basics'
+                  ? 'Basics'
+                  : studentData.course}
+              </strong>
+              {studentData.courseType &&
+                studentData.courseType.toLowerCase() !== 'basics' && (
+                  <span> ({studentData.courseType})</span>
+                )}
             </p>
           </div>
         ) : (
           <>
             {studentData?.course && (
-              <div className="student-course-header" style={{
+              <div
+                className="student-course-header"
+                style={{
                 textAlign: 'center',
                 marginBottom: '30px',
                 color: 'rgb(29, 165, 245)',
                 fontSize: '30px',
-                fontFamily: 'fantasy'
-              }}>
-                {studentData.course}
-                {studentData.courseType && <span style={{ fontSize: '20px', marginLeft: '8px' , textTransform: 'capitalize'}}>({studentData.courseType})</span>}
+                  fontFamily: 'fantasy',
+                }}
+              >
+                {studentData.courseType && studentData.courseType.toLowerCase() === 'basics'
+                  ? 'Basics'
+                  : studentData.course}
+                {studentData.courseType &&
+                  studentData.courseType.toLowerCase() !== 'basics' && (
+                    <span
+                      style={{
+                        fontSize: '20px',
+                        marginLeft: '8px',
+                        textTransform: 'capitalize',
+                      }}
+                    >
+                      ({studentData.courseType})
+                    </span>
+                  )}
               </div>
             )}
             <div className="schedule-table-container" style={{

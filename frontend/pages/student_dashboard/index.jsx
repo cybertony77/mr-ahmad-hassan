@@ -1177,7 +1177,7 @@ export default function StudentDashboard() {
                   onClick={() => router.push("/student_dashboard/online_sessions")}
                 >
                   <Image src="/video.svg" alt="Videos" width={23} height={23} />
-                  Online Sessions
+                  Recorded Sessions
                 </button>
               )}
 

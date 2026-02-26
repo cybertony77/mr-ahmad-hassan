@@ -58,8 +58,9 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'POST') {
-      // Create new quiz (always questions type)
-      const { lesson_name, timer, questions, lesson, course, courseType, deadline_type, deadline_date, shuffle_questions_and_answers, show_details_after_submitting } = req.body;
+      const { lesson_name, timer, questions, lesson, course, courseType, quiz_type, deadline_type, deadline_date, shuffle_questions_and_answers, show_details_after_submitting, comment, pdf_file_name, pdf_url } = req.body;
+
+      const effectiveQuizType = quiz_type || 'questions';
 
       if (!course || course.trim() === '') {
         return res.status(400).json({ error: '❌ Course is required' });
@@ -73,9 +74,18 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: '❌ Lesson name is required' });
       }
 
-      // Validate questions
-      if (!Array.isArray(questions) || questions.length === 0) {
-        return res.status(400).json({ error: '❌ At least one question is required' });
+      if (effectiveQuizType === 'pdf') {
+        if (!pdf_file_name || pdf_file_name.trim() === '') {
+          return res.status(400).json({ error: '❌ PDF file name is required' });
+        }
+        if (!pdf_url || pdf_url.trim() === '') {
+          return res.status(400).json({ error: '❌ PDF file is required' });
+        }
+      } else {
+        // Validate questions
+        if (!Array.isArray(questions) || questions.length === 0) {
+          return res.status(400).json({ error: '❌ At least one question is required' });
+        }
       }
 
       // Validate deadline if with deadline
@@ -91,38 +101,34 @@ export default async function handler(req, res) {
         }
       }
 
-      // Validate questions
-      for (let i = 0; i < questions.length; i++) {
-        const q = questions[i];
-        // Each question must have at least question text OR image (or both)
-        const hasQuestionText = q.question_text && q.question_text.trim() !== '';
-        const hasQuestionImage = q.question_picture;
-        if (!hasQuestionText && !hasQuestionImage) {
-          return res.status(400).json({ error: `❌ Question ${i + 1}: Question must have at least question text or image (or both)` });
-        }
-        if (!Array.isArray(q.answers) || q.answers.length < 2) {
-          return res.status(400).json({ error: `❌ Question ${i + 1}: At least 2 answers (A and B) are required` });
-        }
-        // Validate answers are letters (A, B, C, D, etc.)
-        for (let j = 0; j < q.answers.length; j++) {
-          const expectedLetter = String.fromCharCode(65 + j); // A=65, B=66, etc.
-          if (q.answers[j] !== expectedLetter) {
-            return res.status(400).json({ error: `❌ Question ${i + 1}: Answers must be letters A, B, C, D, etc. in order` });
+      if (effectiveQuizType === 'questions') {
+        for (let i = 0; i < questions.length; i++) {
+          const q = questions[i];
+          const hasQuestionText = q.question_text && q.question_text.trim() !== '';
+          const hasQuestionImage = q.question_picture;
+          if (!hasQuestionText && !hasQuestionImage) {
+            return res.status(400).json({ error: `❌ Question ${i + 1}: Question must have at least question text or image (or both)` });
           }
-        }
-        // Validate correct_answer is a valid letter (a, b, c, etc.) that corresponds to an answer
-        if (!q.correct_answer) {
-          return res.status(400).json({ error: `❌ Question ${i + 1}: Correct answer is required` });
-        }
-        // Handle both string and array formats for correct_answer
-        const correctAnswerLetter = Array.isArray(q.correct_answer) ? q.correct_answer[0] : q.correct_answer;
-        const correctLetterUpper = correctAnswerLetter.toUpperCase();
-        if (!q.answers.includes(correctLetterUpper)) {
-          return res.status(400).json({ error: `❌ Question ${i + 1}: Correct answer must be one of the provided answers` });
-        }
-        // Validate answer_texts array matches answers array length
-        if (q.answer_texts && Array.isArray(q.answer_texts) && q.answer_texts.length !== q.answers.length) {
-          return res.status(400).json({ error: `❌ Question ${i + 1}: Answer texts array must match answers array length` });
+          if (!Array.isArray(q.answers) || q.answers.length < 2) {
+            return res.status(400).json({ error: `❌ Question ${i + 1}: At least 2 answers (A and B) are required` });
+          }
+          for (let j = 0; j < q.answers.length; j++) {
+            const expectedLetter = String.fromCharCode(65 + j);
+            if (q.answers[j] !== expectedLetter) {
+              return res.status(400).json({ error: `❌ Question ${i + 1}: Answers must be letters A, B, C, D, etc. in order` });
+            }
+          }
+          if (!q.correct_answer) {
+            return res.status(400).json({ error: `❌ Question ${i + 1}: Correct answer is required` });
+          }
+          const correctAnswerLetter = Array.isArray(q.correct_answer) ? q.correct_answer[0] : q.correct_answer;
+          const correctLetterUpper = correctAnswerLetter.toUpperCase();
+          if (!q.answers.includes(correctLetterUpper)) {
+            return res.status(400).json({ error: `❌ Question ${i + 1}: Correct answer must be one of the provided answers` });
+          }
+          if (q.answer_texts && Array.isArray(q.answer_texts) && q.answer_texts.length !== q.answers.length) {
+            return res.status(400).json({ error: `❌ Question ${i + 1}: Answer texts array must match answers array length` });
+          }
         }
       }
 
@@ -141,30 +147,36 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: '❌ A quiz with this course, course type, and lesson already exists' });
       }
 
-      // Prepare quiz document (always questions type)
       const quizDoc = {
         lesson_name: lesson_name.trim(),
         course: courseTrimmed,
         courseType: courseTypeTrimmed || null,
         lesson: lessonTrimmed,
-        quiz_type: 'questions',
+        quiz_type: effectiveQuizType,
         deadline_type: deadline_type || 'no_deadline',
         deadline_date: deadline_type === 'with_deadline' ? deadline_date : null,
-        timer: timer || null,
-        shuffle_questions_and_answers: shuffle_questions_and_answers === true || shuffle_questions_and_answers === 'true',
-        show_details_after_submitting: show_details_after_submitting === true || show_details_after_submitting === 'true',
+        timer: effectiveQuizType === 'questions' ? (timer || null) : null,
+        shuffle_questions_and_answers: effectiveQuizType === 'questions' ? (shuffle_questions_and_answers === true || shuffle_questions_and_answers === 'true') : false,
+        show_details_after_submitting: effectiveQuizType === 'questions' ? (show_details_after_submitting === true || show_details_after_submitting === 'true') : false,
         date: new Date(),
-        questions: questions.map(q => ({
+        comment: comment && comment.trim() !== '' ? comment.trim() : null,
+      };
+
+      if (effectiveQuizType === 'pdf') {
+        quizDoc.pdf_file_name = pdf_file_name.trim();
+        quizDoc.pdf_url = pdf_url.trim();
+      } else {
+        quizDoc.questions = questions.map(q => ({
           question_text: q.question_text || '',
           question_picture: q.question_picture,
           answers: q.answers,
           answer_texts: q.answer_texts || [],
           correct_answer: q.correct_answer,
           question_explanation: q.question_explanation || ''
-        })),
-        questions_count: questions.length,
-        questions_with_images: questions.filter(q => q.question_picture).length
-      };
+        }));
+        quizDoc.questions_count = questions.length;
+        quizDoc.questions_with_images = questions.filter(q => q.question_picture).length;
+      }
 
       const result = await db.collection('quizzes').insertOne(quizDoc);
       
@@ -176,9 +188,10 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'PUT') {
-      // Update quiz (always questions type)
       const { id } = req.query;
-      const { lesson_name, timer, questions, lesson, course, courseType, deadline_type, deadline_date, shuffle_questions_and_answers, show_details_after_submitting } = req.body;
+      const { lesson_name, timer, questions, lesson, course, courseType, quiz_type, deadline_type, deadline_date, shuffle_questions_and_answers, show_details_after_submitting, comment, pdf_file_name, pdf_url } = req.body;
+
+      const effectiveQuizType = quiz_type || 'questions';
 
       if (!id) {
         return res.status(400).json({ error: '❌ Quiz ID is required' });
@@ -196,9 +209,17 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: '❌ Lesson name is required' });
       }
 
-      // Validate questions
-      if (!Array.isArray(questions) || questions.length === 0) {
-        return res.status(400).json({ error: '❌ At least one question is required' });
+      if (effectiveQuizType === 'pdf') {
+        if (!pdf_file_name || pdf_file_name.trim() === '') {
+          return res.status(400).json({ error: '❌ PDF file name is required' });
+        }
+        if (!pdf_url || pdf_url.trim() === '') {
+          return res.status(400).json({ error: '❌ PDF file is required' });
+        }
+      } else {
+        if (!Array.isArray(questions) || questions.length === 0) {
+          return res.status(400).json({ error: '❌ At least one question is required' });
+        }
       }
 
       // Validate deadline if with deadline
@@ -214,38 +235,34 @@ export default async function handler(req, res) {
         }
       }
 
-      // Validate questions
-      for (let i = 0; i < questions.length; i++) {
-        const q = questions[i];
-        // Each question must have at least question text OR image (or both)
-        const hasQuestionText = q.question_text && q.question_text.trim() !== '';
-        const hasQuestionImage = q.question_picture;
-        if (!hasQuestionText && !hasQuestionImage) {
-          return res.status(400).json({ error: `❌ Question ${i + 1}: Question must have at least question text or image (or both)` });
-        }
-        if (!Array.isArray(q.answers) || q.answers.length < 2) {
-          return res.status(400).json({ error: `❌ Question ${i + 1}: At least 2 answers (A and B) are required` });
-        }
-        // Validate answers are letters (A, B, C, D, etc.)
-        for (let j = 0; j < q.answers.length; j++) {
-          const expectedLetter = String.fromCharCode(65 + j); // A=65, B=66, etc.
-          if (q.answers[j] !== expectedLetter) {
-            return res.status(400).json({ error: `❌ Question ${i + 1}: Answers must be letters A, B, C, D, etc. in order` });
+      if (effectiveQuizType === 'questions') {
+        for (let i = 0; i < questions.length; i++) {
+          const q = questions[i];
+          const hasQuestionText = q.question_text && q.question_text.trim() !== '';
+          const hasQuestionImage = q.question_picture;
+          if (!hasQuestionText && !hasQuestionImage) {
+            return res.status(400).json({ error: `❌ Question ${i + 1}: Question must have at least question text or image (or both)` });
           }
-        }
-        // Validate correct_answer is a valid letter (a, b, c, etc.) that corresponds to an answer
-        if (!q.correct_answer) {
-          return res.status(400).json({ error: `❌ Question ${i + 1}: Correct answer is required` });
-        }
-        // Handle both string and array formats for correct_answer
-        const correctAnswerLetter = Array.isArray(q.correct_answer) ? q.correct_answer[0] : q.correct_answer;
-        const correctLetterUpper = correctAnswerLetter.toUpperCase();
-        if (!q.answers.includes(correctLetterUpper)) {
-          return res.status(400).json({ error: `❌ Question ${i + 1}: Correct answer must be one of the provided answers` });
-        }
-        // Validate answer_texts array matches answers array length
-        if (q.answer_texts && Array.isArray(q.answer_texts) && q.answer_texts.length !== q.answers.length) {
-          return res.status(400).json({ error: `❌ Question ${i + 1}: Answer texts array must match answers array length` });
+          if (!Array.isArray(q.answers) || q.answers.length < 2) {
+            return res.status(400).json({ error: `❌ Question ${i + 1}: At least 2 answers (A and B) are required` });
+          }
+          for (let j = 0; j < q.answers.length; j++) {
+            const expectedLetter = String.fromCharCode(65 + j);
+            if (q.answers[j] !== expectedLetter) {
+              return res.status(400).json({ error: `❌ Question ${i + 1}: Answers must be letters A, B, C, D, etc. in order` });
+            }
+          }
+          if (!q.correct_answer) {
+            return res.status(400).json({ error: `❌ Question ${i + 1}: Correct answer is required` });
+          }
+          const correctAnswerLetter = Array.isArray(q.correct_answer) ? q.correct_answer[0] : q.correct_answer;
+          const correctLetterUpper = correctAnswerLetter.toUpperCase();
+          if (!q.answers.includes(correctLetterUpper)) {
+            return res.status(400).json({ error: `❌ Question ${i + 1}: Correct answer must be one of the provided answers` });
+          }
+          if (q.answer_texts && Array.isArray(q.answer_texts) && q.answer_texts.length !== q.answers.length) {
+            return res.status(400).json({ error: `❌ Question ${i + 1}: Answer texts array must match answers array length` });
+          }
         }
       }
 
@@ -264,26 +281,34 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: `❌ A quiz with this course, course type, and lesson already exists.` });
       }
 
-      // Prepare update data (always questions type)
       const updateData = {
         course: courseTrimmed,
         courseType: courseTypeTrimmed || null,
         lesson: lessonTrimmed,
         lesson_name: lesson_name.trim(),
-        quiz_type: 'questions',
+        quiz_type: effectiveQuizType,
         deadline_type: deadline_type || 'no_deadline',
         deadline_date: deadline_type === 'with_deadline' ? deadline_date : null,
-        timer: timer === null || timer === undefined ? null : parseInt(timer),
-        shuffle_questions_and_answers: shuffle_questions_and_answers === true || shuffle_questions_and_answers === 'true',
-        show_details_after_submitting: show_details_after_submitting === true || show_details_after_submitting === 'true',
-        questions: questions.map(q => ({
+        timer: effectiveQuizType === 'questions' ? (timer === null || timer === undefined ? null : parseInt(timer)) : null,
+        shuffle_questions_and_answers: effectiveQuizType === 'questions' ? (shuffle_questions_and_answers === true || shuffle_questions_and_answers === 'true') : false,
+        show_details_after_submitting: effectiveQuizType === 'questions' ? (show_details_after_submitting === true || show_details_after_submitting === 'true') : false,
+        comment: comment && comment.trim() !== '' ? comment.trim() : null,
+      };
+
+      let unsetFields = {};
+
+      if (effectiveQuizType === 'pdf') {
+        updateData.pdf_file_name = pdf_file_name.trim();
+        updateData.pdf_url = pdf_url.trim();
+        unsetFields = { questions: '', questions_count: '', questions_with_images: '', book_name: '', from_page: '', to_page: '' };
+      } else {
+        updateData.questions = questions.map(q => ({
           question_text: q.question_text || '',
           question_picture: q.question_picture,
           answers: q.answers,
           answer_texts: q.answer_texts || [],
           correct_answer: (() => {
             const hasText = q.answer_texts && q.answer_texts.length > 0 && q.answer_texts.some(text => text && text.trim() !== '');
-            // Handle both string and array formats for correct_answer
             const correctAnswerLetter = Array.isArray(q.correct_answer) ? q.correct_answer[0] : q.correct_answer;
             const correctAnswerLetterLower = correctAnswerLetter.toLowerCase();
             const correctAnswerIdx = q.answers.indexOf(correctAnswerLetterLower.toUpperCase());
@@ -295,15 +320,15 @@ export default async function handler(req, res) {
               : correctAnswerLetterLower;
           })(),
           question_explanation: q.question_explanation || ''
-        })),
-        questions_count: questions.length,
-        questions_with_images: questions.filter(q => q.question_picture).length
-      };
+        }));
+        updateData.questions_count = questions.length;
+        updateData.questions_with_images = questions.filter(q => q.question_picture).length;
+        unsetFields = { pdf_file_name: '', pdf_url: '', book_name: '', from_page: '', to_page: '' };
+      }
 
-      // Remove old pages_from_book fields if they exist
       const updateQuery = { 
         $set: updateData,
-        $unset: { book_name: '', from_page: '', to_page: '' }
+        ...(Object.keys(unsetFields).length > 0 ? { $unset: unsetFields } : {})
       };
 
       const result = await db.collection('quizzes').updateOne(

@@ -66,6 +66,10 @@ export default function EditOnlineSession() {
       const response = await apiClient.get('/api/system/config');
       return response.data;
     },
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchOnMount: false,
   });
 
   const showUploadTab = systemConfig?.cloudflare_r2 === true;
@@ -77,6 +81,10 @@ export default function EditOnlineSession() {
       const response = await apiClient.get('/api/online_sessions');
       return response.data;
     },
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchOnMount: false,
   });
 
   const sessions = sessionsData?.sessions || [];
@@ -399,7 +407,7 @@ export default function EditOnlineSession() {
         <Title backText="Back" href="/dashboard/manage_online_system/online_sessions">
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <Image src="/edit.svg" alt="Edit" width={32} height={32} />
-            Edit Online Session
+            Edit Recorded Session
           </div>
         </Title>
 

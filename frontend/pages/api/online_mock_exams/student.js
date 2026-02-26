@@ -119,6 +119,7 @@ export default async function handler(req, res) {
             courseType: me.courseType || null,
             lesson: me.lesson || null,
             lesson_name: me.lesson_name,
+            mock_exam_type: me.mock_exam_type || 'questions',
             deadline_type: me.deadline_type || 'no_deadline',
             deadline_date: me.deadline_date || null,
             timer: me.timer || null,
@@ -126,14 +127,21 @@ export default async function handler(req, res) {
             show_details_after_submitting: me.show_details_after_submitting || false
           };
 
-          // Add questions (mock exams are always questions type)
-          if (me.questions && Array.isArray(me.questions)) {
+          if (me.comment) {
+            sanitized.comment = me.comment;
+          }
+
+          if (me.mock_exam_type === 'pdf') {
+            sanitized.pdf_file_name = me.pdf_file_name || '';
+            sanitized.pdf_url = me.pdf_url || '';
+          }
+
+          if (me.mock_exam_type !== 'pdf' && me.questions && Array.isArray(me.questions)) {
             sanitized.questions = me.questions.map(q => ({
               question_text: q.question_text || '',
               question_picture: q.question_picture || null,
               answers: q.answers || [],
               answer_texts: q.answer_texts || []
-              // Note: correct_answer is intentionally excluded for students
             }));
           } else {
             sanitized.questions = [];

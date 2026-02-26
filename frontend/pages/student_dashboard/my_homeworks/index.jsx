@@ -56,6 +56,7 @@ export default function MyHomeworks() {
   const [completedHomeworks, setCompletedHomeworks] = useState(new Set());
   const [errorMessage, setErrorMessage] = useState('');
   const [onlineHomeworks, setOnlineHomeworks] = useState([]);
+  const [notePopup, setNotePopup] = useState(null);
   
   // Check for error message in URL query
   useEffect(() => {
@@ -73,11 +74,10 @@ export default function MyHomeworks() {
       const response = await apiClient.get('/api/homeworks/student');
       return response.data;
     },
-    refetchInterval: 10 * 60 * 1000, // Auto-refresh every 10 minutes
-    refetchIntervalInBackground: false, // Don't refetch when tab is not active
-    refetchOnWindowFocus: true, // Refetch on window focus
-    refetchOnMount: true, // Refetch on mount
-    refetchOnReconnect: true, // Refetch on reconnect
+    // No auto refetch interval here; fetch on mount/focus/reconnect only
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+    refetchOnReconnect: true,
   });
 
   const homeworks = homeworksData?.homeworks || [];
@@ -174,7 +174,7 @@ export default function MyHomeworks() {
       }
     },
     enabled: !!profile?.id,
-    refetchInterval: 10 * 60 * 1000, // Auto-refresh every 10 minutes
+    // No auto refetch interval; rely on focus/mount/reconnect + manual invalidation
     refetchOnWindowFocus: true,
     refetchOnMount: true,
     refetchOnReconnect: true,
@@ -636,7 +636,7 @@ export default function MyHomeworks() {
           {/* Homeworks List */}
           {filteredHomeworks.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '40px', color: '#6c757d' }}>
-              {homeworks.length === 0 ? '❌ No homeworks available.' : 'No homeworks match your filters.'}
+              {homeworks.length === 0 ? '❌ No homeworks available.' : '❌ No homeworks match your filters.'}
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -666,7 +666,11 @@ export default function MyHomeworks() {
                     <div style={{ fontSize: '1.2rem', fontWeight: '600', marginBottom: '8px' }}>
                       {[homework.lesson, homework.lesson_name].filter(Boolean).join(' • ')}
                     </div>
-                    {homework.homework_type === 'pages_from_book' ? (
+                    {homework.homework_type === 'pdf' ? (
+                      <div style={{ padding: '12px 16px', backgroundColor: '#ffffff', border: '2px solid #e9ecef', borderRadius: '8px', fontSize: '0.95rem', color: '#495057', textAlign: 'left', display: 'inline-block', maxWidth: '350px' }}>
+                        <div style={{ fontWeight: '600', marginBottom: '4px' }}>{homework.pdf_file_name}</div>
+                      </div>
+                    ) : homework.homework_type === 'pages_from_book' ? (
                       <div style={{
                         padding: '12px 16px',
                         backgroundColor: '#ffffff',
@@ -726,7 +730,21 @@ export default function MyHomeworks() {
                       </div>
                     )}
                   </div>
-                  <div className="homework-buttons" style={{ display: 'flex', gap: '12px' }}>
+                  <div className="homework-buttons" style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                    {homework.homework_type === 'pdf' && homework.pdf_url && (
+                      <button onClick={(e) => { e.stopPropagation(); fetch(homework.pdf_url).then(r => r.blob()).then(b => { const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = `${homework.pdf_file_name || 'file'}.pdf`; a.click(); URL.revokeObjectURL(a.href); }); }} className="hw-action-btn"
+                        style={{ padding: '8px 16px', backgroundColor: '#32b750', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '0.9rem', fontWeight: '600', transition: 'all 0.2s ease', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                        <Image src="/pdf.svg" alt="PDF" width={18} height={18} style={{ display: 'inline-block' }} />
+                        Download PDF
+                      </button>
+                    )}
+                    {homework.comment && (
+                      <button onClick={(e) => { e.stopPropagation(); setNotePopup(homework.comment); }} className="hw-action-btn"
+                        style={{ padding: '8px 16px', backgroundColor: '#1FA8DC', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '0.9rem', fontWeight: '600', transition: 'all 0.2s ease', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                        <Image src="/notes4.svg" alt="Notes" width={18} height={18} style={{ display: 'inline-block' }} />
+                        Notes
+                      </button>
+                    )}
                     {(() => {
                       // Get hwDone status from weeks database (for display purposes only)
                       const hwDoneStatus = getHwDoneStatus(homework.lesson);
@@ -837,8 +855,10 @@ export default function MyHomeworks() {
                         );
                       }
                       
-                      // Default: show Start button or pages_from_book display
-                      // (Even if weeks array says hwDone is true, if not in online_homeworks, show Start)
+                      if (homework.homework_type === 'pdf') {
+                        return null;
+                      }
+                      
                       if (homework.homework_type === 'pages_from_book') {
                         const hwStatus = getHwDoneStatus(homework.lesson);
                         return (
@@ -931,8 +951,11 @@ export default function MyHomeworks() {
           }
           .homework-buttons {
             width: 100%;
+            flex-direction: column;
           }
-          .homework-buttons button {
+          .homework-buttons button,
+          .homework-buttons a,
+          .homework-buttons .hw-action-btn {
             width: 100%;
             justify-content: center;
           }
@@ -980,6 +1003,28 @@ export default function MyHomeworks() {
           }
         }
       `}</style>
+
+      {/* Note Popup */}
+      {notePopup && (
+        <div onClick={() => setNotePopup(null)} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '16px' }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ background: 'linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)', borderRadius: '20px', padding: '0', maxWidth: '500px', width: '100%', position: 'relative', boxShadow: '0 25px 60px rgba(0,0,0,0.3)', overflow: 'hidden', maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ background: 'linear-gradient(135deg, #1FA8DC 0%, #17a2b8 100%)', padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <Image src="/notes4.svg" alt="Notes" width={22} height={22} style={{ filter: 'brightness(0) invert(1)' }} />
+                <h3 style={{ margin: 0, fontSize: '1.2rem', color: 'white', fontWeight: '700' }}>Note</h3>
+              </div>
+              <button onClick={() => setNotePopup(null)} style={{ background: '#dc3545', color: 'white', border: 'none', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer', fontSize: '18px', fontWeight: '700', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', padding: 0, lineHeight: 1 }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = '#c82333'; e.currentTarget.style.transform = 'scale(1.1)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = '#dc3545'; e.currentTarget.style.transform = 'scale(1)'; }}
+                onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.95)'}
+                onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1.1)'}>✕</button>
+            </div>
+            <div style={{ padding: '24px', overflowY: 'auto', flex: 1 }}>
+              <div style={{ fontSize: '1rem', lineHeight: '1.8', color: '#495057', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{notePopup}</div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

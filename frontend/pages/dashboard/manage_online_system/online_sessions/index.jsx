@@ -308,7 +308,7 @@ export default function OnlineSessions() {
         <Title backText="Back" href="/dashboard/manage_online_system">
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <Image src="/video.svg" alt="Videos" width={35} height={35} />
-            Online Sessions
+            Recorded Sessions
           </div>
         </Title>
 

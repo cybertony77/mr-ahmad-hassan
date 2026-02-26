@@ -333,46 +333,9 @@ export default function QR() {
     
   }, [studentId, student]);
 
-  // Auto-attend student function
-  const autoAttendStudent = async (studentId) => {
-    try {
-      console.log('🤖 Auto-attending student:', student.name, 'for lesson:', selectedLesson, 'center:', attendanceCenter);
-      
-      // Set optimistic state immediately
-      setOptimisticAttended(true);
-      
-      if (!selectedLesson) {
-        console.error('❌ selectedLesson is missing — skipping attendance update');
-        setError('Please select a valid lesson before marking attendance.');
-        return;
-      }
-      
-      // Create attendance data
-      const now = new Date();
-      const day = String(now.getDate()).padStart(2, '0');
-      const month = String(now.getMonth() + 1).padStart(2, '0');
-      const year = now.getFullYear();
-      const lastAttendance = `${day}/${month}/${year} in ${attendanceCenter}`;
-      
-      const attendanceData = { 
-        attended: true,
-        lastAttendance, 
-        lastAttendanceCenter: attendanceCenter, 
-        attendanceLesson: selectedLesson 
-      };
-      
-      // Call the attendance API
-      toggleAttendanceMutation.mutate({
-        id: student.id,
-        attendanceData
-      });
-      
-    } catch (error) {
-      console.error('Error in auto-attend:', error);
-      // Reset optimistic state on error
-      setOptimisticAttended(null);
-    }
-  };
+  // NOTE: We no longer have a separate autoAttendStudent implementation.
+  // For QR scans we reuse the same toggleAttendance() logic so that
+  // payment & scoring behavior is 100% consistent with manual clicks.
 
   // Handle QR code scanned from the QRScanner component
   const handleQRCodeScanned = (scannedStudentId) => {
@@ -658,7 +621,9 @@ export default function QR() {
     if (student && attendanceCenter && selectedLesson && !student.attended_the_session && optimisticAttended === null && isQRScanned) {
       // Add a small delay to ensure UI is ready
       const timer = setTimeout(() => {
-        autoAttendStudent(student.id);
+        // Reuse the same logic as manual attendance toggle so that
+        // payment & scoring rules are identical for QR scans
+        toggleAttendance();
       }, 800); // 800ms delay for better UX
       
       return () => clearTimeout(timer);
@@ -760,6 +725,8 @@ export default function QR() {
         setAttendanceSuccess(newAttended ? '✅ Student Marked as Attended' : '✅ Student Marked as Absent');
         // Clear optimistic state since the mutation succeeded
         setOptimisticAttended(null);
+        // Disable QR auto-attend after a successful toggle so manual reversals work correctly
+        setIsQRScanned(false);
         
         // Calculate score for attendance (only if scoring system is enabled)
         // If reversing to absent, get the last attendance history entry and reverse it

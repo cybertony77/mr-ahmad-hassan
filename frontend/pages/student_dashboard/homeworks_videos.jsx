@@ -347,7 +347,8 @@ export default function HomeworksVideos() {
 
       const response = await apiClient.post('/api/vhc/check', {
         VHC: vhc,
-        session_id: sessionId
+        session_id: sessionId,
+        session_lesson: pendingVideo.session.lesson || null
       });
 
       if (response.data.valid) {

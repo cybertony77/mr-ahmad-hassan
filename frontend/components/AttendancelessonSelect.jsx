@@ -9,7 +9,8 @@ export default function AttendanceLessonSelect({
   isOpen, 
   onToggle, 
   onClose, 
-  placeholder = 'Select Attendance Lesson' 
+  placeholder = 'Select Attendance Lesson',
+  includeAllOption = false
 }) {
   // Fetch lessons from database
   const { data: lessonsResponse, isLoading: lessonsLoading } = useQuery({
@@ -92,7 +93,6 @@ export default function AttendanceLessonSelect({
           overflowY: 'auto',
           marginTop: '4px'
         }}>
-          {/* Clear selection option */}
           <div
             style={{
               padding: '12px 16px',
@@ -108,6 +108,24 @@ export default function AttendanceLessonSelect({
           >
             ✕ Clear selection
           </div>
+          {includeAllOption && (
+            <div
+              style={{
+                padding: '12px 16px',
+                cursor: 'pointer',
+                borderBottom: '1px solid #f8f9fa',
+                transition: 'background-color 0.2s ease',
+                color: selectedLesson === 'All' ? '#1FA8DC' : '#000000',
+                backgroundColor: selectedLesson === 'All' ? '#f0f8ff' : '#ffffff',
+                fontWeight: selectedLesson === 'All' ? '600' : '400'
+              }}
+              onClick={() => handleLessonSelect('All')}
+              onMouseEnter={(e) => e.target.style.backgroundColor = selectedLesson === 'All' ? '#f0f8ff' : '#f8f9fa'}
+              onMouseLeave={(e) => e.target.style.backgroundColor = selectedLesson === 'All' ? '#f0f8ff' : '#ffffff'}
+            >
+              All
+            </div>
+          )}
           {lessonsLoading ? (
             <div style={{
               padding: '12px 16px',

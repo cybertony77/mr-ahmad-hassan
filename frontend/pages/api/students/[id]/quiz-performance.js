@@ -155,7 +155,8 @@ export default async function handler(req, res) {
     
     // Filter quizzes by course and courseType
     const filteredQuizzes = allQuizzes.filter(qz => {
-      if (!qz.course || !qz.lesson) return false; // Only include quizzes with course and lesson
+      if (!qz.course || !qz.lesson) return false;
+      if (qz.quiz_type === 'pdf') return false;
       const qzCourse = (qz.course || '').trim();
       const qzCourseType = (qz.courseType || '').trim();
       

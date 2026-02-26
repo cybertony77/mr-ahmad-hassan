@@ -155,7 +155,8 @@ export default async function handler(req, res) {
     
     // Filter homeworks by course and courseType
     const filteredHomeworks = allHomeworks.filter(hw => {
-      if (!hw.course || !hw.lesson) return false; // Only include homeworks with course and lesson
+      if (!hw.course || !hw.lesson) return false;
+      if (hw.homework_type === 'pdf') return false;
       const hwCourse = (hw.course || '').trim();
       const hwCourseType = (hw.courseType || '').trim();
       

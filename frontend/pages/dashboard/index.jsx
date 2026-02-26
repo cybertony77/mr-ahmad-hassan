@@ -189,13 +189,13 @@ export default function Dashboard() {
             Mock Exam
           </button>
         )}
-        <button
+        {/* <button
           className="dashboard-btn"
           onClick={() => router.push("/dashboard/qr_generator")}
         >
           <Image src="/qrcode.svg" alt="QR Code" width={20} height={20} />
           Create QR Code
-        </button>
+        </button> */}
         <button
           className="dashboard-btn"
           onClick={() => router.push("/dashboard/lessons")}

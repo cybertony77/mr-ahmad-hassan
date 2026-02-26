@@ -56,7 +56,7 @@ export default async function handler(req, res) {
       return res.status(403).json({ error: 'Forbidden: Access denied' });
     }
 
-    const { VHC, session_id } = req.body;
+    const { VHC, session_id, session_lesson } = req.body;
 
     if (!VHC || VHC.length !== 9) {
       return res.status(400).json({ 
@@ -88,7 +88,7 @@ export default async function handler(req, res) {
     if (!vhcRecord) {
       return res.status(200).json({ 
         success: false,
-        error: '❌ Sorry, This code is incorrect',
+        error: '❌ Sorry, Wrong VHC, recheck your VHC',
         valid: false 
       });
     }
@@ -100,6 +100,18 @@ export default async function handler(req, res) {
         error: '❌ Sorry, This code is deactivated',
         valid: false 
       });
+    }
+
+    // Lesson validation: if code has a specific lesson (not "All"), check it matches the session lesson
+    const codeLesson = vhcRecord.lesson || 'All';
+    if (codeLesson !== 'All' && session_lesson) {
+      if (codeLesson.toLowerCase() !== session_lesson.toLowerCase()) {
+        return res.status(200).json({ 
+          success: false,
+          error: '❌ Sorry, Wrong VHC, recheck your VHC',
+          valid: false 
+        });
+      }
     }
 
     // Check deadline date if code_settings is 'deadline_date'

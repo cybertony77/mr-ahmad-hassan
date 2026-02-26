@@ -27,6 +27,7 @@ const vvcApi = {
     }
     if (params.code_state) queryParams.append('code_state', params.code_state);
     if (params.payment_state) queryParams.append('payment_state', params.payment_state);
+    if (params.lesson) queryParams.append('lesson', params.lesson);
     
     const queryString = queryParams.toString();
     const url = queryString ? `/api/vvc?${queryString}` : '/api/vvc';

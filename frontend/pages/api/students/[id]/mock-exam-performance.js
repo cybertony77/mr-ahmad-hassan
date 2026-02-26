@@ -130,7 +130,8 @@ export default async function handler(req, res) {
     
     // Filter mock exams by course and courseType
     const filteredMockExams = allMockExams.filter(me => {
-      if (!me.course || !me.lesson) return false; // Only include mock exams with course and lesson
+      if (!me.course || !me.lesson) return false;
+      if (me.mock_exam_type === 'pdf') return false;
       const meCourse = (me.course || '').trim();
       const meCourseType = (me.courseType || '').trim();
       

@@ -33,23 +33,41 @@ const envConfig = loadEnvConfig();
 const MONGO_URI = envConfig.MONGO_URI || process.env.MONGO_URI;
 const DB_NAME = envConfig.DB_NAME || process.env.DB_NAME;
 
-// Parse time fields (hours, minutes, period) into a Date object for today
-function parseTimeToDate(timeObj) {
+// Get current time (minutes since midnight) in Egypt/Cairo timezone
+function getCairoNowMinutes() {
+  const now = new Date();
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Africa/Cairo',
+    hour12: false,
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+  const parts = formatter.formatToParts(now);
+  const hourPart = parts.find((p) => p.type === 'hour');
+  const minutePart = parts.find((p) => p.type === 'minute');
+
+  const hours = hourPart ? parseInt(hourPart.value, 10) : 0;
+  const minutes = minutePart ? parseInt(minutePart.value, 10) : 0;
+
+  if (Number.isNaN(hours) || Number.isNaN(minutes)) return null;
+  return hours * 60 + minutes;
+}
+
+// Convert stored time object (hours, minutes, AM/PM) into minutes since midnight (Cairo local day)
+function timeObjToMinutes(timeObj) {
   if (!timeObj || !timeObj.hours || !timeObj.minutes || !timeObj.period) return null;
-  
+
   let hours = parseInt(timeObj.hours, 10);
   const minutes = parseInt(timeObj.minutes, 10);
-  const period = timeObj.period.toUpperCase();
-  
-  if (isNaN(hours) || isNaN(minutes)) return null;
-  
+  const period = String(timeObj.period || '').toUpperCase();
+
+  if (Number.isNaN(hours) || Number.isNaN(minutes)) return null;
+
   // Convert to 24-hour format
   if (period === 'PM' && hours !== 12) hours += 12;
   if (period === 'AM' && hours === 12) hours = 0;
-  
-  const now = new Date();
-  const date = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes, 0, 0);
-  return date;
+
+  return hours * 60 + minutes;
 }
 
 export default async function handler(req, res) {
@@ -86,7 +104,12 @@ export default async function handler(req, res) {
     }
 
     const meeting = meetings[0];
-    const now = new Date();
+    const nowMinutes = getCairoNowMinutes();
+
+    if (nowMinutes === null) {
+      // Fallback: if timezone calculation fails, hide meeting to be safe
+      return res.status(200).json({ success: true, meeting: null });
+    }
 
     // Check course match
     const studentCourse = (student.course || '').trim().toLowerCase();
@@ -111,27 +134,43 @@ export default async function handler(req, res) {
       student.lessons[meetingLesson] && 
       student.lessons[meetingLesson].attended === true;
 
-    // Check deadline: if deadline exists and deadline <= now, hide
+    // Check deadline (Egypt/Cairo): if deadline exists and deadline <= now, hide
     // BUT if the student already attended this lesson, don't hide (they may need to rejoin)
-    if (!studentAlreadyAttended && meeting.deadline && meeting.deadline.hours && meeting.deadline.minutes && meeting.deadline.period) {
-      const deadlineDate = parseTimeToDate(meeting.deadline);
-      if (deadlineDate && deadlineDate <= now) {
+    if (
+      !studentAlreadyAttended &&
+      meeting.deadline &&
+      meeting.deadline.hours &&
+      meeting.deadline.minutes &&
+      meeting.deadline.period
+    ) {
+      const deadlineMinutes = timeObjToMinutes(meeting.deadline);
+      if (deadlineMinutes !== null && deadlineMinutes <= nowMinutes) {
         return res.status(200).json({ success: true, meeting: null });
       }
     }
 
-    // Check start date: if start date exists and start date > now, hide
-    if (meeting.dateOfStart && meeting.dateOfStart.hours && meeting.dateOfStart.minutes && meeting.dateOfStart.period) {
-      const startDate = parseTimeToDate(meeting.dateOfStart);
-      if (startDate && startDate > now) {
+    // Check start date (Egypt/Cairo): if start date exists and start > now, hide
+    if (
+      meeting.dateOfStart &&
+      meeting.dateOfStart.hours &&
+      meeting.dateOfStart.minutes &&
+      meeting.dateOfStart.period
+    ) {
+      const startMinutes = timeObjToMinutes(meeting.dateOfStart);
+      if (startMinutes !== null && startMinutes > nowMinutes) {
         return res.status(200).json({ success: true, meeting: null });
       }
     }
 
-    // Check end date: if end date exists and end date < now, hide
-    if (meeting.dateOfEnd && meeting.dateOfEnd.hours && meeting.dateOfEnd.minutes && meeting.dateOfEnd.period) {
-      const endDate = parseTimeToDate(meeting.dateOfEnd);
-      if (endDate && endDate < now) {
+    // Check end date (Egypt/Cairo): if end date exists and end < now, hide
+    if (
+      meeting.dateOfEnd &&
+      meeting.dateOfEnd.hours &&
+      meeting.dateOfEnd.minutes &&
+      meeting.dateOfEnd.period
+    ) {
+      const endMinutes = timeObjToMinutes(meeting.dateOfEnd);
+      if (endMinutes !== null && endMinutes < nowMinutes) {
         return res.status(200).json({ success: true, meeting: null });
       }
     }

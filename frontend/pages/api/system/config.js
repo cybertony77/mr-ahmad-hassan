@@ -48,6 +48,7 @@ export default async function handler(req, res) {
     const zoomJoinMeeting = envConfig.SYSTEM_ZOOM_JOIN_MEETING === 'true' || process.env.SYSTEM_ZOOM_JOIN_MEETING === 'true';
     const paymentSystem = envConfig.SYSTEM_PAYMENT_SYSTEM === 'true' || process.env.SYSTEM_PAYMENT_SYSTEM === 'true';
     const subscription = envConfig.SYSTEM_SUBSCRIPTION === 'true' || process.env.SYSTEM_SUBSCRIPTION === 'true';
+    const deviceLimitations = envConfig.SYSTEM_DEVICE_LIMITATIONS === 'true' || process.env.SYSTEM_DEVICE_LIMITATIONS === 'true';
     
     res.json({ 
       domain: systemDomain,
@@ -62,7 +63,8 @@ export default async function handler(req, res) {
       cloudflare_r2: cloudflareR2,
       zoom_join_meeting: zoomJoinMeeting,
       payment_system: paymentSystem,
-      subscription: subscription
+      subscription: subscription,
+      device_limitations: deviceLimitations
     });
   } catch (error) {
     console.error('Error fetching system config:', error);

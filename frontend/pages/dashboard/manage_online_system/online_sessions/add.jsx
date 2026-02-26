@@ -58,6 +58,10 @@ export default function AddOnlineSession() {
       const response = await apiClient.get('/api/system/config');
       return response.data;
     },
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchOnMount: false,
   });
 
   const showUploadTab = systemConfig?.cloudflare_r2 === true;
@@ -69,6 +73,10 @@ export default function AddOnlineSession() {
       const response = await apiClient.get('/api/online_sessions');
       return response.data;
     },
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchOnMount: false,
   });
 
   const sessions = sessionsData?.sessions || [];
@@ -326,7 +334,7 @@ export default function AddOnlineSession() {
         <Title backText="Back" href="/dashboard/manage_online_system/online_sessions">
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <Image src="/plus.svg" alt="Add" width={32} height={32} />
-            Add Online Session
+            Add Recorded Session
           </div>
         </Title>
 

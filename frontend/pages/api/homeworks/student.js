@@ -127,11 +127,21 @@ export default async function handler(req, res) {
             show_details_after_submitting: hw.show_details_after_submitting || false
           };
 
+          if (hw.comment) {
+            sanitized.comment = hw.comment;
+          }
+
           // Add pages_from_book fields if applicable
           if (hw.homework_type === 'pages_from_book') {
             sanitized.book_name = hw.book_name || '';
             sanitized.from_page = hw.from_page || null;
             sanitized.to_page = hw.to_page || null;
+          }
+
+          // Add PDF fields if applicable
+          if (hw.homework_type === 'pdf') {
+            sanitized.pdf_file_name = hw.pdf_file_name || '';
+            sanitized.pdf_url = hw.pdf_url || '';
           }
 
           // Add questions if applicable (only for questions type)

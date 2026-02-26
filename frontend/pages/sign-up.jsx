@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/router";
 import { useQuery } from '@tanstack/react-query';
 import Image from 'next/image';
@@ -36,6 +36,7 @@ export default function SignUp() {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [imagePreview, setImagePreview] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
+  const vacInputRefs = useRef([]);
 
   // VAC check query
   const vacCode = form.vac.join('');
@@ -93,31 +94,34 @@ export default function SignUp() {
     setError('');
   };
 
-  const handleVACChange = (index, value) => {
-    // Check if pasted text (more than 1 character)
-    const sanitized = value.replace(/[^a-zA-Z0-9]/g, '');
-    
-    if (sanitized.length > 1) {
-      // User pasted multiple characters - distribute them
-      const newVac = [...form.vac];
-      for (let i = 0; i < sanitized.length && (index + i) < 7; i++) {
-        newVac[index + i] = sanitized[i];
-      }
+  const handleVACChange = (e, index) => {
+    const rawValue = e.target.value;
+    const value = rawValue.replace(/[^a-zA-Z0-9]/g, '');
+
+    if (!value) return;
+
+    const newVac = [...form.vac];
+
+    // If multiple characters entered (paste on mobile / desktop)
+    if (value.length > 1) {
+      const chars = value.slice(0, 7).split('');
+      chars.forEach((char, i) => {
+        if (i < 7) newVac[i] = char;
+      });
+
       setForm({ ...form, vac: newVac });
       setError('');
-      
-      // Focus on the next empty input or last input
-      const nextIndex = Math.min(index + sanitized.length, 6);
-      setTimeout(() => {
-        const nextInput = document.querySelector(`input[name="vac-${nextIndex}"]`);
-        if (nextInput) nextInput.focus();
-      }, 0);
-    } else {
-      // Single character input
-      const newVac = [...form.vac];
-      newVac[index] = sanitized.slice(0, 1);
-      setForm({ ...form, vac: newVac });
-      setError('');
+      vacInputRefs.current[Math.min(chars.length - 1, 6)]?.focus();
+      return;
+    }
+
+    // Normal single character
+    newVac[index] = value[0];
+    setForm({ ...form, vac: newVac });
+    setError('');
+
+    if (index < 6) {
+      vacInputRefs.current[index + 1]?.focus();
     }
   };
 
@@ -125,54 +129,26 @@ export default function SignUp() {
     e.preventDefault();
     const pastedText = e.clipboardData.getData('text');
     const sanitized = pastedText.replace(/[^a-zA-Z0-9]/g, '').slice(0, 7);
-    
-    if (sanitized.length === 7) {
-      // Fill all 7 inputs with the pasted code
-      const newVac = sanitized.split('').slice(0, 7);
-      setForm({ ...form, vac: newVac });
-      setError('');
-      
-      // Focus on the last input after pasting
-      setTimeout(() => {
-        const lastInput = document.querySelector(`input[name="vac-6"]`);
-        if (lastInput) lastInput.focus();
-      }, 0);
-    } else if (sanitized.length > 0) {
-      // If pasted text is less than 7 characters, fill from current index
-      const newVac = [...form.vac];
-      for (let i = 0; i < sanitized.length && (index + i) < 7; i++) {
-        newVac[index + i] = sanitized[i];
-      }
-      setForm({ ...form, vac: newVac });
-      setError('');
-      
-      // Focus on the next empty input or last input
-      const nextIndex = Math.min(index + sanitized.length, 6);
-      setTimeout(() => {
-        const nextInput = document.querySelector(`input[name="vac-${nextIndex}"]`);
-        if (nextInput) nextInput.focus();
-      }, 0);
+    if (sanitized.length === 0) return;
+
+    const newVac = [...form.vac];
+    const startIdx = sanitized.length === 7 ? 0 : index;
+    for (let i = 0; i < sanitized.length && (startIdx + i) < 7; i++) {
+      newVac[startIdx + i] = sanitized[i];
     }
+    setForm({ ...form, vac: newVac });
+    setError('');
+    const lastIndex = Math.min(startIdx + sanitized.length - 1, 6);
+    vacInputRefs.current[lastIndex]?.focus();
   };
 
   const handleKeyDown = (e, index) => {
-    // Handle backspace to move to previous input
     if (e.key === 'Backspace' && !form.vac[index] && index > 0) {
-      const prevInput = document.querySelector(`input[name="vac-${index - 1}"]`);
-      if (prevInput) prevInput.focus();
-    }
-    // Handle arrow keys
-    else if (e.key === 'ArrowLeft' && index > 0) {
-      const prevInput = document.querySelector(`input[name="vac-${index - 1}"]`);
-      if (prevInput) prevInput.focus();
+      vacInputRefs.current[index - 1]?.focus();
+    } else if (e.key === 'ArrowLeft' && index > 0) {
+      vacInputRefs.current[index - 1]?.focus();
     } else if (e.key === 'ArrowRight' && index < 6) {
-      const nextInput = document.querySelector(`input[name="vac-${index + 1}"]`);
-      if (nextInput) nextInput.focus();
-    }
-    // Auto-advance to next input on character entry
-    else if (e.key !== 'Backspace' && e.key !== 'ArrowLeft' && e.key !== 'ArrowRight' && form.vac[index] && index < 6) {
-      const nextInput = document.querySelector(`input[name="vac-${index + 1}"]`);
-      if (nextInput) nextInput.focus();
+      vacInputRefs.current[index + 1]?.focus();
     }
   };
 
@@ -389,7 +365,7 @@ export default function SignUp() {
           left: 0;
           right: 0;
           height: 4px;
-          background: linear-gradient(330deg, rgb(161, 30, 30) 0%, rgb(223, 106, 71) 50%, rgba(212, 147, 63, 1) 100%);
+          background: linear-gradient(380deg, #1FA8DC 0%, #FEB954 100%);
           background-size: 200% 100%;
           animation: gradientShift 3s ease infinite;
         }
@@ -859,12 +835,16 @@ export default function SignUp() {
               {form.vac.map((char, index) => (
                 <input
                   key={index}
+                  ref={(el) => (vacInputRefs.current[index] = el)}
                   name={`vac-${index}`}
                   className={`vac-input ${!vacChecking && vacCheck && !vacCheck.valid && form.id && form.vac.join('').length === 7 ? 'error-border' : ''}`}
                   type="text"
-                  maxLength="1"
+                  autoComplete="one-time-code"
+                  inputMode="text"
+                  autoCapitalize="characters"
+                  spellCheck={false}
                   value={char}
-                  onChange={(e) => handleVACChange(index, e.target.value)}
+                  onChange={(e) => handleVACChange(e, index)}
                   onKeyDown={(e) => handleKeyDown(e, index)}
                   onPaste={(e) => handleVACPaste(e, index)}
                   onFocus={(e) => {

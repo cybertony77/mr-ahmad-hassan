@@ -96,7 +96,7 @@ export default async function handler(req, res) {
       const db = client.db(DB_NAME);
 
       // Check if pagination parameters are provided
-      const { page, limit, search, sortBy, sortOrder, viewed, code_state, payment_state } = req.query;
+      const { page, limit, search, sortBy, sortOrder, viewed, code_state, payment_state, lesson } = req.query;
       const hasPagination = page || limit;
 
       if (hasPagination) {
@@ -133,6 +133,17 @@ export default async function handler(req, res) {
         // Filter: payment_state
         if (payment_state && payment_state !== '') {
           vvcQueryFilter.payment_state = payment_state;
+        }
+
+        // Filter: lesson
+        if (lesson && lesson !== '') {
+          if (lesson === 'All') {
+            // Filter for codes with lesson = 'All'
+            vvcQueryFilter.lesson = 'All';
+          } else {
+            // Use case-insensitive regex for lesson matching
+            vvcQueryFilter.lesson = { $regex: `^${lesson.trim()}$`, $options: 'i' };
+          }
         }
 
         // Get total count for pagination
@@ -236,7 +247,7 @@ export default async function handler(req, res) {
         return res.status(403).json({ error: 'Forbidden: Access denied' });
       }
 
-      const { number_of_codes, code_settings, number_of_views, deadline_date, code_state } = req.body;
+      const { number_of_codes, code_settings, number_of_views, deadline_date, code_state, lesson } = req.body;
 
       // Validation
       const codesCount = number_of_codes ? parseInt(number_of_codes) : 1;
@@ -274,6 +285,8 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Code state must be Activated or Deactivated' });
       }
 
+      const codeLesson = (lesson && lesson.trim()) ? lesson.trim() : 'All';
+
       client = await MongoClient.connect(MONGO_URI);
       const db = client.db(DB_NAME);
 
@@ -288,6 +301,7 @@ export default async function handler(req, res) {
         const vvcData = {
           VVC: code,
           code_settings: code_settings,
+          lesson: codeLesson,
           viewed: false,
           viewed_by_who: null,
           code_state: code_state,
@@ -332,7 +346,7 @@ export default async function handler(req, res) {
       }
 
       const { id } = req.query;
-      const { code_settings, number_of_views, deadline_date, code_state, payment_state } = req.body;
+      const { code_settings, number_of_views, deadline_date, code_state, payment_state, lesson } = req.body;
 
       if (!id) {
         return res.status(400).json({ error: 'VVC ID is required' });
@@ -395,6 +409,9 @@ export default async function handler(req, res) {
       if (deadline_date !== undefined && code_settings === 'deadline_date') {
         // Ensure date is stored as string in YYYY-MM-DD format
         update.deadline_date = String(deadline_date).trim();
+      }
+      if (lesson !== undefined) {
+        update.lesson = (lesson && lesson.trim()) ? lesson.trim() : 'All';
       }
       if (code_state !== undefined) {
         update.code_state = code_state;
