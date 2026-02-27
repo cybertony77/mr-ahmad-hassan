@@ -668,7 +668,9 @@ export default function MyHomeworks() {
                     </div>
                     {homework.homework_type === 'pdf' ? (
                       <div style={{ padding: '12px 16px', backgroundColor: '#ffffff', border: '2px solid #e9ecef', borderRadius: '8px', fontSize: '0.95rem', color: '#495057', textAlign: 'left', display: 'inline-block', maxWidth: '350px' }}>
-                        <div style={{ fontWeight: '600', marginBottom: '4px' }}>{homework.pdf_file_name}</div>
+                        <div style={{ fontWeight: '600', marginBottom: '4px' }}>
+                          {`File Name : ${homework.pdf_file_name || 'file'}.pdf`}
+                        </div>
                       </div>
                     ) : homework.homework_type === 'pages_from_book' ? (
                       <div style={{
@@ -860,33 +862,8 @@ export default function MyHomeworks() {
                       }
                       
                       if (homework.homework_type === 'pages_from_book') {
-                        const hwStatus = getHwDoneStatus(homework.lesson);
-                        return (
-                          <button
-                            style={{
-                              padding: '8px 16px',
-                              backgroundColor: hwStatus === true ? '#28a745' : hwStatus === "No Homework" ? '#dc3545' : hwStatus === "Not Completed" ? '#ffc107' : '#dc3545',
-                              color: 'white',
-                              border: 'none',
-                              borderRadius: '20px',
-                              cursor: 'default',
-                              fontSize: '0.9rem',
-                              fontWeight: '600',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '8px',
-                              whiteSpace: 'nowrap'
-                            }}
-                          >
-                            {hwStatus === true 
-                              ? `✅ Done${getHwDegree(homework.lesson, homework._id) ? ` (${getHwDegree(homework.lesson, homework._id)})` : ''}` 
-                              : hwStatus === "No Homework" 
-                              ? '🚫 No Homework'
-                              : hwStatus === "Not Completed"
-                              ? '⚠️ Not Completed'
-                              : '❌ Not Done'}
-                          </button>
-                        );
+                        // For pages from book, hide state section (no Done/Not Done badge)
+                        return null;
                       }
                       
                       // Show Start button for questions type

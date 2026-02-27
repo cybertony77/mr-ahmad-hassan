@@ -592,7 +592,7 @@ export default function PreviewStudentHomeworks() {
                 </div>
                 <div className="detail-item">
                   <div className="detail-label">Parent Phone</div>
-                  <div className="detail-value">{student.parentsPhone || 'N/A'}</div>
+                  <div className="detail-value">{student.parents_phone || student.parentsPhone || 'N/A'}</div>
                 </div>
               </div>
             </div>

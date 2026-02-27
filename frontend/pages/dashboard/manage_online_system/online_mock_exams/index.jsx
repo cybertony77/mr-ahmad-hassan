@@ -460,7 +460,9 @@ export default function MockExams() {
                     <div style={{ color: '#6c757d', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                       {mockExam.mock_exam_type === 'pdf' ? (
                         <div style={{ padding: '12px 16px', backgroundColor: '#ffffff', border: '2px solid #e9ecef', borderRadius: '8px', fontSize: '0.95rem', color: '#495057', textAlign: 'left', display: 'inline-block', maxWidth: '350px' }}>
-                          <div style={{ fontWeight: '600', marginBottom: '4px' }}>{mockExam.pdf_file_name}</div>
+                          <div style={{ fontWeight: '600', marginBottom: '4px' }}>
+                            {`File Name : ${mockExam.pdf_file_name || 'file'}.pdf`}
+                          </div>
                         </div>
                       ) : (
                       <div style={{

@@ -472,7 +472,9 @@ export default function Homeworks() {
                     <div style={{ color: '#6c757d', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                       {homework.homework_type === 'pdf' ? (
                         <div style={{ padding: '12px 16px', backgroundColor: '#ffffff', border: '2px solid #e9ecef', borderRadius: '8px', fontSize: '0.95rem', color: '#495057', textAlign: 'left', display: 'inline-block', maxWidth: '350px' }}>
-                          <div style={{ fontWeight: '600', marginBottom: '4px' }}>{homework.pdf_file_name}</div>
+                          <div style={{ fontWeight: '600', marginBottom: '4px' }}>
+                            {`File Name : ${homework.pdf_file_name || 'file'}.pdf`}
+                          </div>
                         </div>
                       ) : homework.homework_type === 'pages_from_book' ? (
                         <div style={{

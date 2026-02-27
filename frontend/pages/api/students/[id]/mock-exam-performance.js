@@ -128,10 +128,11 @@ export default async function handler(req, res) {
     const studentCourseTypeTrimmed = (studentCourseType || '').trim();
     const allMockExams = await db.collection('mock_exams').find({}).toArray();
     
-    // Filter mock exams by course and courseType
+    // Filter mock exams by course, courseType, and type (only include questions)
     const filteredMockExams = allMockExams.filter(me => {
       if (!me.course || !me.lesson) return false;
-      if (me.mock_exam_type === 'pdf') return false;
+      const mockType = (me.mock_exam_type || 'questions').toLowerCase();
+      if (mockType !== 'questions') return false;
       const meCourse = (me.course || '').trim();
       const meCourseType = (me.courseType || '').trim();
       

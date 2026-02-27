@@ -26,7 +26,7 @@ export default function QuizPerformanceChart({ chartData, height = 500 }) {
       return [];
     }
     return chartData.map(item => ({
-      lesson: item.lesson || item.week || 'Unknown',
+      lesson: item.lesson_name || item.lesson || item.week || 'Unknown',
       percentage: item.percentage || 0,
       result: item.result || '0 / 0' // Include result from API
     }));

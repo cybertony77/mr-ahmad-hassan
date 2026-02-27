@@ -153,10 +153,11 @@ export default async function handler(req, res) {
     const studentCourseTypeTrimmed = (studentCourseType || '').trim();
     const allHomeworks = await db.collection('homeworks').find({}).toArray();
     
-    // Filter homeworks by course and courseType
+    // Filter homeworks by course, courseType, and type (only include questions)
     const filteredHomeworks = allHomeworks.filter(hw => {
       if (!hw.course || !hw.lesson) return false;
-      if (hw.homework_type === 'pdf') return false;
+      const hwType = (hw.homework_type || 'questions').toLowerCase();
+      if (hwType !== 'questions') return false;
       const hwCourse = (hw.course || '').trim();
       const hwCourseType = (hw.courseType || '').trim();
       

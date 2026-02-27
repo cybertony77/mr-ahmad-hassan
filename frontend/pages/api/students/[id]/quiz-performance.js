@@ -153,10 +153,11 @@ export default async function handler(req, res) {
     const studentCourseTypeTrimmed = (studentCourseType || '').trim();
     const allQuizzes = await db.collection('quizzes').find({}).toArray();
     
-    // Filter quizzes by course and courseType
+    // Filter quizzes by course, courseType, and type (only include questions)
     const filteredQuizzes = allQuizzes.filter(qz => {
       if (!qz.course || !qz.lesson) return false;
-      if (qz.quiz_type === 'pdf') return false;
+      const quizType = (qz.quiz_type || 'questions').toLowerCase();
+      if (quizType !== 'questions') return false;
       const qzCourse = (qz.course || '').trim();
       const qzCourseType = (qz.courseType || '').trim();
       
