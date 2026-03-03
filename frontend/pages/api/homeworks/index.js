@@ -59,7 +59,7 @@ export default async function handler(req, res) {
 
     if (req.method === 'POST') {
       // Create new homework
-      const { lesson_name, timer, questions, lesson, course, courseType, homework_type, deadline_type, deadline_date, book_name, from_page, to_page, shuffle_questions_and_answers, show_details_after_submitting, comment, pdf_file_name, pdf_url } = req.body;
+      const { lesson_name, timer, questions, lesson, course, courseType, homework_type, deadline_type, deadline_date, book_name, from_page, to_page, shuffle_questions_and_answers, show_details_after_submitting, comment, pdf_file_name, pdf_url, state } = req.body;
 
       if (!lesson_name || lesson_name.trim() === '') {
         return res.status(400).json({ error: '❌ Lesson name is required' });
@@ -162,6 +162,12 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: `❌ A homework with this course, course type, and lesson already exists.` });
       }
 
+      // Normalize homework state (default to "Activated")
+      let finalState = 'Activated';
+      if (state === 'Activated' || state === 'Deactivated') {
+        finalState = state;
+      }
+
       const homework = {
         course: courseTrimmed,
         courseType: courseTypeTrimmed || null,
@@ -174,6 +180,7 @@ export default async function handler(req, res) {
         shuffle_questions_and_answers: homework_type === 'questions' ? (shuffle_questions_and_answers === true || shuffle_questions_and_answers === 'true') : false,
         show_details_after_submitting: homework_type === 'questions' ? (show_details_after_submitting === true || show_details_after_submitting === 'true') : false,
         comment: comment && comment.trim() !== '' ? comment.trim() : null,
+        state: finalState
       };
 
       if (homework_type === 'pdf') {
@@ -219,7 +226,7 @@ export default async function handler(req, res) {
     if (req.method === 'PUT') {
       // Update homework
       const { id } = req.query;
-      const { lesson_name, timer, questions, lesson, course, courseType, homework_type, deadline_type, deadline_date, book_name, from_page, to_page, shuffle_questions_and_answers, show_details_after_submitting, comment, pdf_file_name, pdf_url } = req.body;
+      const { lesson_name, timer, questions, lesson, course, courseType, homework_type, deadline_type, deadline_date, book_name, from_page, to_page, shuffle_questions_and_answers, show_details_after_submitting, comment, pdf_file_name, pdf_url, state } = req.body;
 
       if (!id) {
         return res.status(400).json({ error: '❌ Homework ID is required' });
@@ -327,6 +334,12 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: `❌ A homework with this course, course type, and lesson already exists.` });
       }
 
+      // Normalize homework state if provided
+      let finalState = null;
+      if (state === 'Activated' || state === 'Deactivated') {
+        finalState = state;
+      }
+
       const updateData = {
         course: courseTrimmed,
         courseType: courseTypeTrimmed || null,
@@ -340,6 +353,10 @@ export default async function handler(req, res) {
         show_details_after_submitting: homework_type === 'questions' ? (show_details_after_submitting === true || show_details_after_submitting === 'true') : false,
         comment: comment && comment.trim() !== '' ? comment.trim() : null,
       };
+
+      if (finalState) {
+        updateData.state = finalState;
+      }
 
       if (homework_type === 'pdf') {
         updateData.pdf_file_name = pdf_file_name.trim();
@@ -386,12 +403,20 @@ export default async function handler(req, res) {
       const unsetData = updateData.$unset;
       delete updateData.$unset;
 
+      const updateQuery = { 
+        $set: updateData,
+        ...(unsetData ? { $unset: unsetData } : {})
+      };
+
+      // Also remove old account_state field if present (we now use "state")
+      const existing = await db.collection('homeworks').findOne({ _id: new ObjectId(id) });
+      if (existing && existing.account_state !== undefined) {
+        updateQuery.$unset = { ...(updateQuery.$unset || {}), account_state: '' };
+      }
+
       const result = await db.collection('homeworks').updateOne(
         { _id: new ObjectId(id) },
-        { 
-          $set: updateData,
-          ...(unsetData ? { $unset: unsetData } : {})
-        }
+        updateQuery
       );
 
       if (result.matchedCount === 0) {

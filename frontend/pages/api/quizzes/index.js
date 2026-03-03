@@ -58,7 +58,7 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'POST') {
-      const { lesson_name, timer, questions, lesson, course, courseType, quiz_type, deadline_type, deadline_date, shuffle_questions_and_answers, show_details_after_submitting, comment, pdf_file_name, pdf_url } = req.body;
+      const { lesson_name, timer, questions, lesson, course, courseType, quiz_type, deadline_type, deadline_date, shuffle_questions_and_answers, show_details_after_submitting, comment, pdf_file_name, pdf_url, state } = req.body;
 
       const effectiveQuizType = quiz_type || 'questions';
 
@@ -147,6 +147,12 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: '❌ A quiz with this course, course type, and lesson already exists' });
       }
 
+      // Normalize quiz state (default to "Activated")
+      let finalState = 'Activated';
+      if (state === 'Activated' || state === 'Deactivated') {
+        finalState = state;
+      }
+
       const quizDoc = {
         lesson_name: lesson_name.trim(),
         course: courseTrimmed,
@@ -160,6 +166,7 @@ export default async function handler(req, res) {
         show_details_after_submitting: effectiveQuizType === 'questions' ? (show_details_after_submitting === true || show_details_after_submitting === 'true') : false,
         date: new Date(),
         comment: comment && comment.trim() !== '' ? comment.trim() : null,
+        state: finalState,
       };
 
       if (effectiveQuizType === 'pdf') {
@@ -189,7 +196,7 @@ export default async function handler(req, res) {
 
     if (req.method === 'PUT') {
       const { id } = req.query;
-      const { lesson_name, timer, questions, lesson, course, courseType, quiz_type, deadline_type, deadline_date, shuffle_questions_and_answers, show_details_after_submitting, comment, pdf_file_name, pdf_url } = req.body;
+      const { lesson_name, timer, questions, lesson, course, courseType, quiz_type, deadline_type, deadline_date, shuffle_questions_and_answers, show_details_after_submitting, comment, pdf_file_name, pdf_url, state } = req.body;
 
       const effectiveQuizType = quiz_type || 'questions';
 
@@ -281,6 +288,12 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: `❌ A quiz with this course, course type, and lesson already exists.` });
       }
 
+      // Normalize quiz state if provided
+      let finalState = null;
+      if (state === 'Activated' || state === 'Deactivated') {
+        finalState = state;
+      }
+
       const updateData = {
         course: courseTrimmed,
         courseType: courseTypeTrimmed || null,
@@ -294,6 +307,10 @@ export default async function handler(req, res) {
         show_details_after_submitting: effectiveQuizType === 'questions' ? (show_details_after_submitting === true || show_details_after_submitting === 'true') : false,
         comment: comment && comment.trim() !== '' ? comment.trim() : null,
       };
+
+      if (finalState) {
+        updateData.state = finalState;
+      }
 
       let unsetFields = {};
 
@@ -330,6 +347,12 @@ export default async function handler(req, res) {
         $set: updateData,
         ...(Object.keys(unsetFields).length > 0 ? { $unset: unsetFields } : {})
       };
+
+      // Also remove old account_state field if present (we now use "state")
+      const existing = await db.collection('quizzes').findOne({ _id: new ObjectId(id) });
+      if (existing && existing.account_state !== undefined) {
+        updateQuery.$unset = { ...(updateQuery.$unset || {}), account_state: '' };
+      }
 
       const result = await db.collection('quizzes').updateOne(
         { _id: new ObjectId(id) },

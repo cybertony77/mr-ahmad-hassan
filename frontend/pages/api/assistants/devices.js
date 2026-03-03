@@ -124,7 +124,7 @@ export default async function handler(req, res) {
             // Search by phone number
             const phoneRegex = new RegExp(searchTerm, 'i');
             usersFilter.phone = phoneRegex;
-    }
+          }
         } else {
           // Search by username (id) or name
           const nameRegex = new RegExp(searchTerm, 'i');

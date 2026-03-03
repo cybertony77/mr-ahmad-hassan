@@ -8,6 +8,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '../../../../lib/axios';
 import Image from 'next/image';
 import ZoomableImage from '../../../../components/ZoomableImage';
+import AccountStateSelect from '../../../../components/AccountStateSelect';
 
 
 export default function EditHomework() {
@@ -49,6 +50,7 @@ export default function EditHomework() {
   const [courseTypeDropdownOpen, setCourseTypeDropdownOpen] = useState(false);
   const [selectedLesson, setSelectedLesson] = useState('');
   const [lessonDropdownOpen, setLessonDropdownOpen] = useState(false);
+  const [accountState, setAccountState] = useState('Activated');
   const [errors, setErrors] = useState({});
   const [uploadingImages, setUploadingImages] = useState({});
   const [imagePreviews, setImagePreviews] = useState({});
@@ -164,6 +166,7 @@ export default function EditHomework() {
               question_explanation: ''
             }]
       });
+      setAccountState(homeworkData.state || homeworkData.account_state || 'Activated');
       setDataLoaded(true);
       dataLoadedRef.current = true; // Mark as loaded in ref
 
@@ -694,6 +697,10 @@ export default function EditHomework() {
       show_details_after_submitting: formData.homework_type === 'questions' ? formData.show_details_after_submitting : false,
     };
 
+    if (accountState) {
+      submitData.state = accountState;
+    }
+
     if (formData.homework_type === 'pdf') {
       submitData.pdf_file_name = formData.pdf_file_name.trim();
       submitData.pdf_url = formData.pdf_url.trim();
@@ -898,6 +905,14 @@ export default function EditHomework() {
                 </div>
               )}
             </div>
+
+            {/* Homeworks State */}
+            <AccountStateSelect
+              value={accountState}
+              onChange={setAccountState}
+              label="Homeworks State"
+              placeholder="Select Homeworks State"
+            />
 
             {/* Lesson Name */}
             <div style={{ marginBottom: '20px' }}>

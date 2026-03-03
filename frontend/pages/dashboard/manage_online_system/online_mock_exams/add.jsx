@@ -8,6 +8,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '../../../../lib/axios';
 import Image from 'next/image';
 import ZoomableImage from '../../../../components/ZoomableImage';
+import AccountStateSelect from '../../../../components/AccountStateSelect';
 
 
 export default function AddMockExam() {
@@ -49,6 +50,7 @@ export default function AddMockExam() {
   const [imagePreviews, setImagePreviews] = useState({});
   const [dragOverIndex, setDragOverIndex] = useState(null);
   const errorTimeoutRef = useRef(null);
+  const [accountState, setAccountState] = useState('Activated');
 
   // Fetch all mock exams for duplicate validation
   const { data: mockExamsData } = useQuery({
@@ -504,6 +506,11 @@ export default function AddMockExam() {
       show_details_after_submitting: formData.mock_exam_type === 'questions' ? formData.show_details_after_submitting : false,
     };
 
+    if (accountState) {
+      // Send normalized state field to API
+      submitData.state = accountState;
+    }
+
     if (formData.mock_exam_type === 'pdf') {
       submitData.pdf_file_name = formData.pdf_file_name.trim();
       submitData.pdf_url = formData.pdf_url.trim();
@@ -618,6 +625,14 @@ export default function AddMockExam() {
                 </div>
               )}
             </div>
+
+            {/* Mock Exam State */}
+            <AccountStateSelect
+              value={accountState}
+              onChange={setAccountState}
+              label="Mock Exam State"
+              placeholder="Select Mock Exam State"
+            />
 
             {/* Lesson Name */}
             <div style={{ marginBottom: '20px' }}>

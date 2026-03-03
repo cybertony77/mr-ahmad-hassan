@@ -64,9 +64,10 @@ export default function VerificationHomeworkCodes() {
     code_settings: 'number_of_views',
     number_of_views: '',
     deadline_date: '',
-    lesson: 'All',
+    code_lesson: 'All',
     code_state: 'Activated'
   });
+
   const [lessonDropdownOpen, setLessonDropdownOpen] = useState(false);
   const [errors, setErrors] = useState({});
   const [successMessage, setSuccessMessage] = useState('');
@@ -92,7 +93,7 @@ export default function VerificationHomeworkCodes() {
     viewed: filterViewed !== null ? filterViewed : undefined,
     code_state: filterCodeState || undefined,
     payment_state: filterPaymentState || undefined,
-    lesson: filterLesson || undefined,
+    code_lesson: filterLesson || undefined,
   }, {
     refetchInterval: 60 * 1000,
     refetchIntervalInBackground: false,
@@ -157,7 +158,7 @@ export default function VerificationHomeworkCodes() {
       queryClient.invalidateQueries(['vhc']);
       refetch();
       setShowAddPopup(false);
-      setFormData({ number_of_codes: '', code_settings: 'number_of_views', number_of_views: '', deadline_date: '', lesson: 'All', code_state: 'Activated' });
+      setFormData({ number_of_codes: '', code_settings: 'number_of_views', number_of_views: '', deadline_date: '', code_lesson: 'All', code_state: 'Activated' });
       setErrors({});
       const count = data?.data?.length || 1;
       setSuccessMessage(`${count} VHC code(s) created successfully!`);
@@ -182,9 +183,8 @@ export default function VerificationHomeworkCodes() {
       refetch();
       setShowEditPopup(false);
       setSelectedVHC(null);
-      setFormData({ number_of_views: '', lesson: 'All', code_state: 'Activated' });
+      setFormData({ code_settings: 'number_of_views', number_of_views: '', deadline_date: '', code_lesson: 'All', code_state: 'Activated' });
       setErrors({});
-      setLessonDropdownOpen(false);
       setSuccessMessage('VHC updated successfully!');
       setErrorMessage('');
       setTimeout(() => setSuccessMessage(''), 6000);
@@ -297,9 +297,8 @@ export default function VerificationHomeworkCodes() {
   // Handle add VHC
   const handleAddVHC = () => {
     setShowAddPopup(true);
-    setFormData({ number_of_codes: '', code_settings: 'number_of_views', number_of_views: '', deadline_date: '', lesson: 'All', code_state: 'Activated' });
+    setFormData({ number_of_codes: '', code_settings: 'number_of_views', number_of_views: '', deadline_date: '', code_lesson: 'All', code_state: 'Activated' });
     setErrors({});
-    setLessonDropdownOpen(false);
     setSuccessMessage('');
     setErrorMessage('');
   };
@@ -340,11 +339,10 @@ export default function VerificationHomeworkCodes() {
       code_settings: vhc.code_settings || 'number_of_views',
       number_of_views: vhc.number_of_views ? vhc.number_of_views.toString() : '',
       deadline_date: formatDateForInput(vhc.deadline_date),
-      lesson: vhc.lesson || 'All',
+      code_lesson: vhc.code_lesson || 'All',
       code_state: vhc.code_state || 'Activated'
     });
     setErrors({});
-    setLessonDropdownOpen(false);
     setShowEditPopup(true);
     setSuccessMessage('');
     setErrorMessage('');
@@ -402,7 +400,7 @@ export default function VerificationHomeworkCodes() {
     const mutationData = {
       number_of_codes: parseInt(formData.number_of_codes),
       code_settings: formData.code_settings,
-      lesson: formData.lesson || 'All',
+      code_lesson: formData.code_lesson || 'All',
       code_state: formData.code_state
     };
     
@@ -452,7 +450,7 @@ export default function VerificationHomeworkCodes() {
 
     const updateData = {
       code_settings: formData.code_settings,
-      lesson: formData.lesson || 'All',
+      code_lesson: formData.code_lesson || 'All',
       code_state: formData.code_state
     };
     
@@ -796,9 +794,7 @@ export default function VerificationHomeworkCodes() {
                       <Table.Td style={{ textAlign: 'center' }}>
                         {vhc.viewed_by_who || <span style={{ color: '#dc3545', fontWeight: 'bold' }}>❌ Not viewed yet</span>}
                       </Table.Td>
-                      <Table.Td style={{ textAlign: 'center', fontWeight: '600', color: (vhc.lesson || 'All') === 'All' ? '#28a745' : '#1FA8DC' }}>
-                        {vhc.lesson || 'All'}
-                      </Table.Td>
+                      <Table.Td style={{ textAlign: 'center', fontSize: '0.9rem', fontWeight: '600' }}>{vhc.code_lesson || 'All'}</Table.Td>
                       <Table.Td style={{ textAlign: 'center' }}>
                         {vhc.code_state === 'Activated' ? (
                           <span style={{ color: '#28a745', fontWeight: 'bold' }}>✅ Activated</span>
@@ -1102,8 +1098,8 @@ export default function VerificationHomeworkCodes() {
                     Code Lesson <span style={{ color: 'red' }}>*</span>
                   </label>
                   <AttendanceLessonSelect
-                    selectedLesson={formData.lesson}
-                    onLessonChange={(lesson) => setFormData({ ...formData, lesson: lesson || 'All' })}
+                    selectedLesson={formData.code_lesson}
+                    onLessonChange={(lesson) => setFormData({ ...formData, code_lesson: lesson || 'All' })}
                     isOpen={lessonDropdownOpen}
                     onToggle={() => setLessonDropdownOpen(!lessonDropdownOpen)}
                     onClose={() => setLessonDropdownOpen(false)}
@@ -1163,9 +1159,8 @@ export default function VerificationHomeworkCodes() {
                     type="button"
                     onClick={() => {
                       setShowAddPopup(false);
-                      setFormData({ number_of_codes: '', code_settings: 'number_of_views', number_of_views: '', deadline_date: '', lesson: 'All', code_state: 'Activated' });
+                      setFormData({ number_of_codes: '', code_settings: 'number_of_views', number_of_views: '', deadline_date: '', code_lesson: 'All', code_state: 'Activated' });
                       setErrors({});
-                      setLessonDropdownOpen(false);
                     }}
                     disabled={createVHCMutation.isLoading}
                     className="cancel-btn"
@@ -1287,8 +1282,8 @@ export default function VerificationHomeworkCodes() {
                     Code Lesson <span style={{ color: 'red' }}>*</span>
                   </label>
                   <AttendanceLessonSelect
-                    selectedLesson={formData.lesson}
-                    onLessonChange={(lesson) => setFormData({ ...formData, lesson: lesson || 'All' })}
+                    selectedLesson={formData.code_lesson}
+                    onLessonChange={(lesson) => setFormData({ ...formData, code_lesson: lesson || 'All' })}
                     isOpen={lessonDropdownOpen}
                     onToggle={() => setLessonDropdownOpen(!lessonDropdownOpen)}
                     onClose={() => setLessonDropdownOpen(false)}
@@ -1349,9 +1344,8 @@ export default function VerificationHomeworkCodes() {
                     onClick={() => {
                       setShowEditPopup(false);
                       setSelectedVHC(null);
-                      setFormData({ code_settings: 'number_of_views', number_of_views: '', deadline_date: '', lesson: 'All', code_state: 'Activated' });
+                      setFormData({ code_settings: 'number_of_views', number_of_views: '', deadline_date: '', code_lesson: 'All', code_state: 'Activated' });
                       setErrors({});
-                      setLessonDropdownOpen(false);
                     }}
                     disabled={updateVHCMutation.isLoading}
                     className="cancel-btn"

@@ -8,6 +8,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '../../../../lib/axios';
 import Image from 'next/image';
 import ZoomableImage from '../../../../components/ZoomableImage';
+import AccountStateSelect from '../../../../components/AccountStateSelect';
 
 
 export default function EditQuiz() {
@@ -46,6 +47,7 @@ export default function EditQuiz() {
   const [courseTypeDropdownOpen, setCourseTypeDropdownOpen] = useState(false);
   const [selectedLesson, setSelectedLesson] = useState('');
   const [lessonDropdownOpen, setLessonDropdownOpen] = useState(false);
+  const [accountState, setAccountState] = useState('Activated');
   const [errors, setErrors] = useState({});
   const [uploadingImages, setUploadingImages] = useState({});
   const [imagePreviews, setImagePreviews] = useState({});
@@ -158,6 +160,8 @@ export default function EditQuiz() {
       });
       setDataLoaded(true);
       dataLoadedRef.current = true; // Mark as loaded in ref
+
+      setAccountState(quizData.state || quizData.account_state || 'Activated');
 
       // Load image URLs for existing images
       const loadImageUrls = async () => {
@@ -684,6 +688,10 @@ export default function EditQuiz() {
       show_details_after_submitting: formData.quiz_type === 'questions' ? formData.show_details_after_submitting : false,
     };
 
+    if (accountState) {
+      submitData.state = accountState;
+    }
+
     if (formData.quiz_type === 'pdf') {
       submitData.pdf_file_name = formData.pdf_file_name.trim();
       submitData.pdf_url = formData.pdf_url.trim();
@@ -872,6 +880,14 @@ export default function EditQuiz() {
                 </div>
               )}
             </div>
+
+            {/* Quiz State */}
+            <AccountStateSelect
+              value={accountState}
+              onChange={setAccountState}
+              label="Quiz State"
+              placeholder="Select Quiz State"
+            />
 
             {/* Lesson Name */}
             <div style={{ marginBottom: '20px' }}>

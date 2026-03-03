@@ -6,6 +6,7 @@ import CourseSelect from '../../../../components/CourseSelect';
 import CourseTypeSelect from '../../../../components/CourseTypeSelect';
 import OnlineSessionPaymentStateSelect from '../../../../components/OnlineSessionPaymentStateSelect';
 import VideoInput from '../../../../components/VideoInput';
+import AccountStateSelect from '../../../../components/AccountStateSelect';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '../../../../lib/axios';
 import Image from 'next/image';
@@ -55,6 +56,7 @@ export default function EditOnlineSession() {
   const [selectedLesson, setSelectedLesson] = useState('');
   const [lessonDropdownOpen, setLessonDropdownOpen] = useState(false);
   const [paymentState, setPaymentState] = useState('paid');
+  const [accountState, setAccountState] = useState('Activated');
   const [errors, setErrors] = useState({});
   const [isLoadingSession, setIsLoadingSession] = useState(true);
   const errorTimeoutRef = useRef(null);
@@ -141,6 +143,7 @@ export default function EditOnlineSession() {
       setSelectedCourseType(selectedSession.courseType || '');
       setSelectedLesson(selectedSession.lesson || '');
       setPaymentState(selectedSession.payment_state || 'paid');
+      setAccountState(selectedSession.state || selectedSession.account_state || 'Activated');
       setIsLoadingSession(false);
     }
   }, [selectedSession, isLoadingSession]);
@@ -371,8 +374,8 @@ export default function EditOnlineSession() {
       }
     }
 
-    // Submit form
-    updateSessionMutation.mutate({
+    // Prepare payload
+    const payload = {
       name: formData.name.trim(),
       course: selectedCourse.trim(),
       courseType: selectedCourseType.trim() || null,
@@ -380,7 +383,14 @@ export default function EditOnlineSession() {
       videos: finalVideoData,
       description: formData.description.trim() || null,
       payment_state: paymentState
-    });
+    };
+
+    if (accountState) {
+      payload.state = accountState;
+    }
+
+    // Submit form
+    updateSessionMutation.mutate(payload);
   };
 
   if (isLoadingSession || !selectedSession) {
@@ -494,6 +504,14 @@ export default function EditOnlineSession() {
                 </div>
               )}
             </div>
+
+            {/* Video State */}
+            <AccountStateSelect
+              value={accountState}
+              onChange={setAccountState}
+              label="Video State"
+              placeholder="Select Video State"
+            />
 
             {/* Video Payment State Radio */}
             <div style={{ marginBottom: '20px' }}>

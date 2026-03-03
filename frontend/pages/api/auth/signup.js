@@ -118,7 +118,12 @@ export default async function handler(req, res) {
       id: userId,
       email: email.trim(),
       role: 'student',
-      password: hashedPassword
+      password: hashedPassword,
+      device_limitations: {
+        allowed_devices: 1,
+        last_login: null,
+        devices: []
+      }
     };
 
     // Only add profile_picture if it exists and is not empty

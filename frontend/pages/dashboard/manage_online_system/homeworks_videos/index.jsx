@@ -6,6 +6,7 @@ import AttendanceLessonSelect from '../../../../components/AttendancelessonSelec
 import CourseSelect from '../../../../components/CourseSelect';
 import CourseTypeSelect from '../../../../components/CourseTypeSelect';
 import HomeworkVideoPaymentStateSelect from '../../../../components/HomeworkVideoPaymentStateSelect';
+import AccountStateSelect from '../../../../components/AccountStateSelect';
 import R2VideoPlayer from '../../../../components/R2VideoPlayer';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '../../../../lib/axios';
@@ -94,6 +95,7 @@ export default function HomeworksVideos() {
   const [filterCourseType, setFilterCourseType] = useState('');
   const [filterLesson, setFilterLesson] = useState('');
   const [filterPaymentState, setFilterPaymentState] = useState('');
+  const [filterAccountState, setFilterAccountState] = useState('');
   const [filterCourseDropdownOpen, setFilterCourseDropdownOpen] = useState(false);
   const [filterCourseTypeDropdownOpen, setFilterCourseTypeDropdownOpen] = useState(false);
   const [filterLessonDropdownOpen, setFilterLessonDropdownOpen] = useState(false);
@@ -148,6 +150,14 @@ export default function HomeworksVideos() {
     // Payment state filter
     if (filterPaymentState) {
       if (session.payment_state !== filterPaymentState) {
+        return false;
+      }
+    }
+
+    // Account state filter
+    if (filterAccountState) {
+      const state = session.state || session.account_state || 'Activated';
+      if (state !== filterAccountState) {
         return false;
       }
     }
@@ -418,6 +428,20 @@ export default function HomeworksVideos() {
                 onClose={() => setFilterPaymentStateDropdownOpen(false)}
               />
             </div>
+            <div className="filter-group" style={{ flex: 1, minWidth: 180 }}>
+              <label className="filter-label" style={{ display: 'block', marginBottom: '8px', fontWeight: 600, color: '#495057', fontSize: '0.95rem' }}>
+                Filter by Homework Video State
+              </label>
+              <AccountStateSelect
+                label="Homework Video State"
+                value={filterAccountState || null}
+                onChange={(state) => {
+                  setFilterAccountState(state || '');
+                }}
+                placeholder="Select Homework Video State"
+                style={{ marginBottom: 0, hideLabel: true }}
+              />
+            </div>
           </div>
         </div>
 
@@ -558,6 +582,8 @@ export default function HomeworksVideos() {
               videoLength++;
               videoIndex++;
             }
+            const accountState = session.state || session.account_state || 'Activated';
+            const isActivated = accountState === 'Activated';
             
             return (
                 <div
@@ -596,9 +622,21 @@ export default function HomeworksVideos() {
                   <div style={{ fontWeight: '600', fontSize: '1.1rem', color: '#333', marginBottom: '4px' }}>
                     {[session.course, session.courseType, session.lesson, session.name].filter(Boolean).join(' • ')}
                   </div>
-                    <div style={{ fontSize: '0.9rem', color: '#6c757d', marginTop: '4px' }}>
-                      {[session.payment_state || 'paid', `${videoLength} video${videoLength !== 1 ? 's' : ''}`, session.date].filter(Boolean).join(' • ')}
-                  </div>
+                    <div style={{ fontSize: '0.9rem', color: '#6c757d', marginTop: '4px', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '4px' }}>
+                      <span style={{ color: isActivated ? '#28a745' : '#dc3545', fontWeight: 600 }}>
+                        {accountState}
+                      </span>
+                      <span>•</span>
+                      <span>{session.payment_state || 'paid'}</span>
+                      <span>•</span>
+                      <span>{`${videoLength} video${videoLength !== 1 ? 's' : ''}`}</span>
+                      {session.date && (
+                        <>
+                          <span>•</span>
+                          <span>{session.date}</span>
+                        </>
+                      )}
+                    </div>
                 </div>
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                   <button
@@ -740,8 +778,20 @@ export default function HomeworksVideos() {
                   </div>
                 </div>
                 {/* Metadata */}
-                <div style={{ fontSize: '0.9rem', color: '#6c757d', marginBottom: '12px' }}>
-                  {[session.payment_state || 'paid', `${videoLength} video${videoLength !== 1 ? 's' : ''}`, session.date].filter(Boolean).join(' • ')}
+                <div style={{ fontSize: '0.9rem', color: '#6c757d', marginBottom: '12px', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '4px' }}>
+                  <span style={{ color: isActivated ? '#28a745' : '#dc3545', fontWeight: 600 }}>
+                    {accountState}
+                  </span>
+                  <span>•</span>
+                  <span>{session.payment_state || 'paid'}</span>
+                  <span>•</span>
+                  <span>{`${videoLength} video${videoLength !== 1 ? 's' : ''}`}</span>
+                  {session.date && (
+                    <>
+                      <span>•</span>
+                      <span>{session.date}</span>
+                    </>
+                  )}
                 </div>
                 {/* Edit/Delete Buttons */}
                 <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginBottom: '15px' }}>

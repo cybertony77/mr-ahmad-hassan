@@ -36,8 +36,7 @@ const envConfig = loadEnvConfig();
 const JWT_SECRET = envConfig.JWT_SECRET || process.env.JWT_SECRET || 'topphysics_secret';
 const MONGO_URI = envConfig.MONGO_URI || process.env.MONGO_URI || 'mongodb://localhost:27017/topphysics';
 const DB_NAME = envConfig.DB_NAME || process.env.DB_NAME || 'mr-george-magdy';
-const SUBSCRIPTION_ENABLED =
-  envConfig.SYSTEM_SUBSCRIPTION === 'true' || process.env.SYSTEM_SUBSCRIPTION === 'true';
+const SUBSCRIPTION_ENABLED = envConfig.SYSTEM_SUBSCRIPTION === 'true' || process.env.SYSTEM_SUBSCRIPTION === 'true';
 
 // Helper to dynamically check if device limitations are enabled on each request
 function isDeviceLimitationsEnabled() {
@@ -247,7 +246,7 @@ export default async function handler(req, res) {
 
       // Derive device id (fallback to a deterministic string if missing)
       const incomingDeviceId =
-        typeof device_id === 'string' && device_id.trim() !== ''
+        (typeof device_id === 'string' && device_id.trim() !== '')
           ? device_id.trim()
           : 'unknown-device';
 

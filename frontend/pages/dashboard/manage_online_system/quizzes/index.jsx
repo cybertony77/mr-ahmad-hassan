@@ -9,6 +9,7 @@ import CourseSelect from '../../../../components/CourseSelect';
 import CourseTypeSelect from '../../../../components/CourseTypeSelect';
 import AttendanceLessonSelect from '../../../../components/AttendancelessonSelect';
 import TimerSelect from '../../../../components/TimerSelect';
+import AccountStateSelect from '../../../../components/AccountStateSelect';
 import { TextInput, ActionIcon, useMantineTheme } from '@mantine/core';
 import { IconSearch, IconArrowRight } from '@tabler/icons-react';
 import QuizAnalyticsChart from '../../../../components/QuizAnalyticsChart';
@@ -64,6 +65,7 @@ export default function Quizzes() {
   const [filterCourseType, setFilterCourseType] = useState('');
   const [filterLesson, setFilterLesson] = useState('');
   const [filterTimer, setFilterTimer] = useState('');
+  const [filterAccountState, setFilterAccountState] = useState('');
   const [filterCourseDropdownOpen, setFilterCourseDropdownOpen] = useState(false);
   const [filterCourseTypeDropdownOpen, setFilterCourseTypeDropdownOpen] = useState(false);
   const [filterLessonDropdownOpen, setFilterLessonDropdownOpen] = useState(false);
@@ -128,6 +130,14 @@ export default function Quizzes() {
         if (quiz.timer && quiz.timer !== 0 && quiz.timer !== null) {
           return false;
         }
+      }
+    }
+
+    // Account state filter
+    if (filterAccountState) {
+      const state = quiz.state || quiz.account_state || 'Activated';
+      if (state !== filterAccountState) {
+        return false;
       }
     }
 
@@ -399,6 +409,20 @@ export default function Quizzes() {
                   setFilterLessonDropdownOpen(false);
                 }}
                 onClose={() => setFilterTimerDropdownOpen(false)}
+              />
+            </div>
+            <div className="filter-group" style={{ flex: 1, minWidth: 180 }}>
+              <label className="filter-label" style={{ display: 'block', marginBottom: '8px', fontWeight: 600, color: '#495057', fontSize: '0.95rem' }}>
+                Filter by Quiz State
+              </label>
+              <AccountStateSelect
+                label="Quiz State"
+                value={filterAccountState || null}
+                onChange={(state) => {
+                  setFilterAccountState(state || '');
+                }}
+                placeholder="Select Quiz State"
+                style={{ marginBottom: 0, hideLabel: true }}
               />
             </div>
           </div>

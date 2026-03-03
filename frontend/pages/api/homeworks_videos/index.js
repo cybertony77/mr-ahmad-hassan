@@ -93,7 +93,7 @@ export default async function handler(req, res) {
 
     } else if (req.method === 'POST') {
       // Create new homework video
-      const { name, video_urls, videos, description, course, courseType, lesson, payment_state } = req.body;
+      const { name, video_urls, videos, description, course, courseType, lesson, payment_state, state } = req.body;
 
       // Validate required fields
       if (!course || !course.trim()) {
@@ -177,6 +177,12 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'At least one valid video is required' });
       }
 
+      // Normalize session state (default to "Activated")
+      let finalState = 'Activated';
+      if (state === 'Activated' || state === 'Deactivated') {
+        finalState = state;
+      }
+
       // Create session document
       const session = {
         course: course.trim(),
@@ -186,7 +192,8 @@ export default async function handler(req, res) {
         name: name.trim(),
         ...videoData,
         description: description && description.trim() ? description.trim() : null,
-        date: formatDate(new Date())
+        date: formatDate(new Date()),
+        state: finalState
       };
 
       // Insert into database
@@ -200,7 +207,7 @@ export default async function handler(req, res) {
     } else if (req.method === 'PUT') {
       // Update homework video
       const { id } = req.query;
-      const { name, video_urls, videos, description, course, courseType, lesson, payment_state } = req.body;
+      const { name, video_urls, videos, description, course, courseType, lesson, payment_state, state } = req.body;
 
       if (!id) {
         return res.status(400).json({ error: 'Session ID is required' });
@@ -294,6 +301,12 @@ export default async function handler(req, res) {
         return res.status(404).json({ error: 'Session not found' });
       }
 
+      // Normalize session state if provided
+      let finalState = null;
+      if (state === 'Activated' || state === 'Deactivated') {
+        finalState = state;
+      }
+
       // Update session document
       const updateData = {
         course: course.trim(),
@@ -306,6 +319,10 @@ export default async function handler(req, res) {
         date: formatDate(new Date())
       };
 
+      if (finalState) {
+        updateData.state = finalState;
+      }
+
       // Remove old video_ID, video_type, and video_name fields that are not in the new list
       const keysToRemove = Object.keys(session).filter(key => 
         (key.startsWith('video_ID_') || key.startsWith('video_type_') || key.startsWith('video_name_')) && 
@@ -313,11 +330,15 @@ export default async function handler(req, res) {
       );
       
       const updateQuery = { $set: updateData };
-      if (keysToRemove.length > 0) {
+      if (keysToRemove.length > 0 || session.account_state !== undefined) {
         const unsetFields = {};
         keysToRemove.forEach(key => {
           unsetFields[key] = '';
         });
+        // Also remove old account_state field if present (we now use "state")
+        if (session.account_state !== undefined) {
+          unsetFields.account_state = '';
+        }
         updateQuery.$unset = unsetFields;
       }
 

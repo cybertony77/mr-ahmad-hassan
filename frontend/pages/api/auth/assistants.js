@@ -186,7 +186,12 @@ export default async function handler(req, res) {
         password: hashedPassword, 
         role: String(role).replace(/[$]/g, ''), 
         account_state: (typeof account_state === 'string' ? account_state : "Activated"), 
-        ATCA: (typeof ATCA === 'string' ? ATCA : "no")
+        ATCA: (typeof ATCA === 'string' ? ATCA : "no"),
+        device_limitations: {
+          allowed_devices: 1,
+          last_login: null,
+          devices: []
+        }
       };
       
       await db.collection('users').insertOne(assistantData);

@@ -8,6 +8,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '../../../../lib/axios';
 import Image from 'next/image';
 import ZoomableImage from '../../../../components/ZoomableImage';
+import AccountStateSelect from '../../../../components/AccountStateSelect';
 
 
 export default function EditMockExam() {
@@ -52,6 +53,7 @@ export default function EditMockExam() {
   const [loadingImages, setLoadingImages] = useState({});
   const [dragOverIndex, setDragOverIndex] = useState(null);
   const errorTimeoutRef = useRef(null);
+  const [accountState, setAccountState] = useState('Activated');
 
   // Auto-hide errors after 6 seconds
   useEffect(() => {
@@ -158,6 +160,9 @@ export default function EditMockExam() {
       });
       setDataLoaded(true);
       dataLoadedRef.current = true; // Mark as loaded in ref
+
+      // Load state from new 'state' field, fallback to old 'account_state' for backwards compatibility
+      setAccountState(mockExamData.state || mockExamData.account_state || 'Activated');
 
       // Load image URLs for existing images
       const loadImageUrls = async () => {
@@ -670,6 +675,11 @@ export default function EditMockExam() {
       show_details_after_submitting: formData.mock_exam_type === 'questions' ? formData.show_details_after_submitting : false,
     };
 
+    if (accountState) {
+      // Send normalized state field to API
+      submitData.state = accountState;
+    }
+
     if (formData.mock_exam_type === 'pdf') {
       submitData.pdf_file_name = formData.pdf_file_name.trim();
       submitData.pdf_url = formData.pdf_url.trim();
@@ -847,6 +857,14 @@ export default function EditMockExam() {
                 </div>
               )}
             </div>
+
+            {/* Mock Exam State */}
+            <AccountStateSelect
+              value={accountState}
+              onChange={setAccountState}
+              label="Mock Exam State"
+              placeholder="Select Mock Exam State"
+            />
 
             {/* Lesson Name */}
             <div style={{ marginBottom: '20px' }}>

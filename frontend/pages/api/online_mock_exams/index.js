@@ -58,7 +58,7 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'POST') {
-      const { lesson_name, timer, questions, lesson, course, courseType, mock_exam_type, deadline_type, deadline_date, shuffle_questions_and_answers, show_details_after_submitting, comment, pdf_file_name, pdf_url } = req.body;
+      const { lesson_name, timer, questions, lesson, course, courseType, mock_exam_type, deadline_type, deadline_date, shuffle_questions_and_answers, show_details_after_submitting, comment, pdf_file_name, pdf_url, state } = req.body;
 
       const effectiveType = mock_exam_type || 'questions';
 
@@ -146,6 +146,12 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: '❌ A mock exam with this course, course type, and lesson already exists' });
       }
 
+      // Normalize mock exam state (default to "Activated")
+      let finalState = 'Activated';
+      if (state === 'Activated' || state === 'Deactivated') {
+        finalState = state;
+      }
+
       const mockExamDoc = {
         lesson_name: lesson_name.trim(),
         course: courseTrimmed,
@@ -158,7 +164,8 @@ export default async function handler(req, res) {
         shuffle_questions_and_answers: effectiveType === 'questions' ? (shuffle_questions_and_answers === true || shuffle_questions_and_answers === 'true') : false,
         show_details_after_submitting: effectiveType === 'questions' ? (show_details_after_submitting === true || show_details_after_submitting === 'true') : false,
         comment: comment && comment.trim() !== '' ? comment.trim() : null,
-        date: new Date()
+        date: new Date(),
+        state: finalState
       };
 
       if (effectiveType === 'pdf') {
@@ -198,7 +205,7 @@ export default async function handler(req, res) {
 
     if (req.method === 'PUT') {
       const { id } = req.query;
-      const { lesson_name, timer, questions, lesson, course, courseType, mock_exam_type, deadline_type, deadline_date, shuffle_questions_and_answers, show_details_after_submitting, comment, pdf_file_name, pdf_url } = req.body;
+      const { lesson_name, timer, questions, lesson, course, courseType, mock_exam_type, deadline_type, deadline_date, shuffle_questions_and_answers, show_details_after_submitting, comment, pdf_file_name, pdf_url, state } = req.body;
 
       const effectiveType = mock_exam_type || 'questions';
 
@@ -291,6 +298,12 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: '❌ A mock exam with this course, course type, and lesson already exists' });
       }
 
+      // Normalize mock exam state if provided
+      let finalState = null;
+      if (state === 'Activated' || state === 'Deactivated') {
+        finalState = state;
+      }
+
       const updateData = {
         course: courseTrimmed,
         courseType: courseTypeTrimmed || null,
@@ -304,6 +317,10 @@ export default async function handler(req, res) {
         show_details_after_submitting: effectiveType === 'questions' ? (show_details_after_submitting === true || show_details_after_submitting === 'true') : false,
         comment: comment && comment.trim() !== '' ? comment.trim() : null,
       };
+
+      if (finalState) {
+        updateData.state = finalState;
+      }
 
       let unsetFields = {};
 
@@ -335,12 +352,20 @@ export default async function handler(req, res) {
         unsetFields = { pdf_file_name: '', pdf_url: '' };
       }
 
+      const updateQuery = { 
+        $set: updateData,
+        ...(Object.keys(unsetFields).length > 0 ? { $unset: unsetFields } : {})
+      };
+
+      // Also remove old account_state field if present (we now use "state")
+      const existing = await db.collection('mock_exams').findOne({ _id: new ObjectId(id) });
+      if (existing && existing.account_state !== undefined) {
+        updateQuery.$unset = { ...(updateQuery.$unset || {}), account_state: '' };
+      }
+
       const result = await db.collection('mock_exams').updateOne(
         { _id: new ObjectId(id) },
-        { 
-          $set: updateData,
-          ...(Object.keys(unsetFields).length > 0 ? { $unset: unsetFields } : {})
-        }
+        updateQuery
       );
 
       if (result.matchedCount === 0) {

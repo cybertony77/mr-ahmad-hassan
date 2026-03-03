@@ -64,9 +64,10 @@ export default function VerificationVideoCodes() {
     code_settings: 'number_of_views',
     number_of_views: '',
     deadline_date: '',
-    lesson: 'All',
+    code_lesson: 'All',
     code_state: 'Activated'
   });
+
   const [lessonDropdownOpen, setLessonDropdownOpen] = useState(false);
   const [errors, setErrors] = useState({});
   const [successMessage, setSuccessMessage] = useState('');
@@ -92,7 +93,7 @@ export default function VerificationVideoCodes() {
     viewed: filterViewed !== null ? filterViewed : undefined,
     code_state: filterCodeState || undefined,
     payment_state: filterPaymentState || undefined,
-    lesson: filterLesson || undefined,
+    code_lesson: filterLesson || undefined,
   }, {
     refetchInterval: 60 * 1000,
     refetchIntervalInBackground: false,
@@ -157,7 +158,7 @@ export default function VerificationVideoCodes() {
       queryClient.invalidateQueries(['vvc']);
       refetch();
       setShowAddPopup(false);
-      setFormData({ number_of_codes: '', code_settings: 'number_of_views', number_of_views: '', deadline_date: '', lesson: 'All', code_state: 'Activated' });
+      setFormData({ number_of_codes: '', code_settings: 'number_of_views', number_of_views: '', deadline_date: '', code_lesson: 'All', code_state: 'Activated' });
       setErrors({});
       const count = data?.data?.length || 1;
       setSuccessMessage(`${count} VVC code(s) created successfully!`);
@@ -182,9 +183,8 @@ export default function VerificationVideoCodes() {
       refetch();
       setShowEditPopup(false);
       setSelectedVVC(null);
-      setFormData({ number_of_views: '', lesson: 'All', code_state: 'Activated' });
+      setFormData({ code_settings: 'number_of_views', number_of_views: '', deadline_date: '', code_lesson: 'All', code_state: 'Activated' });
       setErrors({});
-      setLessonDropdownOpen(false);
       setSuccessMessage('VVC updated successfully!');
       setErrorMessage('');
       setTimeout(() => setSuccessMessage(''), 6000);
@@ -297,9 +297,8 @@ export default function VerificationVideoCodes() {
   // Handle add VVC
   const handleAddVVC = () => {
     setShowAddPopup(true);
-    setFormData({ number_of_codes: '', code_settings: 'number_of_views', number_of_views: '', deadline_date: '', lesson: 'All', code_state: 'Activated' });
+    setFormData({ number_of_codes: '', code_settings: 'number_of_views', number_of_views: '', deadline_date: '', code_lesson: 'All', code_state: 'Activated' });
     setErrors({});
-    setLessonDropdownOpen(false);
     setSuccessMessage('');
     setErrorMessage('');
   };
@@ -340,11 +339,10 @@ export default function VerificationVideoCodes() {
       code_settings: vvc.code_settings || 'number_of_views',
       number_of_views: vvc.number_of_views ? vvc.number_of_views.toString() : '',
       deadline_date: formatDateForInput(vvc.deadline_date),
-      lesson: vvc.lesson || 'All',
+      code_lesson: vvc.code_lesson || 'All',
       code_state: vvc.code_state || 'Activated'
     });
     setErrors({});
-    setLessonDropdownOpen(false);
     setShowEditPopup(true);
     setSuccessMessage('');
     setErrorMessage('');
@@ -402,7 +400,7 @@ export default function VerificationVideoCodes() {
     const mutationData = {
       number_of_codes: parseInt(formData.number_of_codes),
       code_settings: formData.code_settings,
-      lesson: formData.lesson || 'All',
+      code_lesson: formData.code_lesson || 'All',
       code_state: formData.code_state
     };
     
@@ -452,7 +450,7 @@ export default function VerificationVideoCodes() {
 
     const updateData = {
       code_settings: formData.code_settings,
-      lesson: formData.lesson || 'All',
+      code_lesson: formData.code_lesson || 'All',
       code_state: formData.code_state
     };
     
@@ -796,9 +794,7 @@ export default function VerificationVideoCodes() {
                       <Table.Td style={{ textAlign: 'center' }}>
                         {vvc.viewed_by_who || <span style={{ color: '#dc3545', fontWeight: 'bold' }}>❌ Not viewed yet</span>}
                       </Table.Td>
-                      <Table.Td style={{ textAlign: 'center', fontWeight: '600', color: (vvc.lesson || 'All') === 'All' ? '#28a745' : '#1FA8DC' }}>
-                        {vvc.lesson || 'All'}
-                      </Table.Td>
+                      <Table.Td style={{ textAlign: 'center', fontSize: '0.9rem', fontWeight: '600' }}>{vvc.code_lesson || 'All'}</Table.Td>
                       <Table.Td style={{ textAlign: 'center' }}>
                         {vvc.code_state === 'Activated' ? (
                           <span style={{ color: '#28a745', fontWeight: 'bold' }}>✅ Activated</span>
@@ -1103,8 +1099,8 @@ export default function VerificationVideoCodes() {
                     Code Lesson <span style={{ color: 'red' }}>*</span>
                   </label>
                   <AttendanceLessonSelect
-                    selectedLesson={formData.lesson}
-                    onLessonChange={(lesson) => setFormData({ ...formData, lesson: lesson || 'All' })}
+                    selectedLesson={formData.code_lesson}
+                    onLessonChange={(lesson) => setFormData({ ...formData, code_lesson: lesson || 'All' })}
                     isOpen={lessonDropdownOpen}
                     onToggle={() => setLessonDropdownOpen(!lessonDropdownOpen)}
                     onClose={() => setLessonDropdownOpen(false)}
@@ -1164,9 +1160,8 @@ export default function VerificationVideoCodes() {
                     type="button"
                     onClick={() => {
                       setShowAddPopup(false);
-                      setFormData({ number_of_codes: '', code_settings: 'number_of_views', number_of_views: '', deadline_date: '', lesson: 'All', code_state: 'Activated' });
+                      setFormData({ number_of_codes: '', code_settings: 'number_of_views', number_of_views: '', deadline_date: '', code_lesson: 'All', code_state: 'Activated' });
                       setErrors({});
-                      setLessonDropdownOpen(false);
                     }}
                     disabled={createVVCMutation.isLoading}
                     className="cancel-btn"
@@ -1288,8 +1283,8 @@ export default function VerificationVideoCodes() {
                     Code Lesson <span style={{ color: 'red' }}>*</span>
                   </label>
                   <AttendanceLessonSelect
-                    selectedLesson={formData.lesson}
-                    onLessonChange={(lesson) => setFormData({ ...formData, lesson: lesson || 'All' })}
+                    selectedLesson={formData.code_lesson}
+                    onLessonChange={(lesson) => setFormData({ ...formData, code_lesson: lesson || 'All' })}
                     isOpen={lessonDropdownOpen}
                     onToggle={() => setLessonDropdownOpen(!lessonDropdownOpen)}
                     onClose={() => setLessonDropdownOpen(false)}
@@ -1350,9 +1345,8 @@ export default function VerificationVideoCodes() {
                     onClick={() => {
                       setShowEditPopup(false);
                       setSelectedVVC(null);
-                      setFormData({ code_settings: 'number_of_views', number_of_views: '', deadline_date: '', lesson: 'All', code_state: 'Activated' });
+                      setFormData({ code_settings: 'number_of_views', number_of_views: '', deadline_date: '', code_lesson: 'All', code_state: 'Activated' });
                       setErrors({});
-                      setLessonDropdownOpen(false);
                     }}
                     disabled={updateVVCMutation.isLoading}
                     className="cancel-btn"
