@@ -34,6 +34,33 @@ export default function PreviewStudentQuizzes() {
     enabled: !!searchId && !!student,
   });
 
+  // Fetch all quizzes to check state for filtering
+  const { data: allQuizzesData } = useQuery({
+    queryKey: ['all-quizzes'],
+    queryFn: async () => {
+      const response = await apiClient.get('/api/quizzes');
+      return response.data;
+    },
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchOnMount: false,
+  });
+
+  const allQuizzes = allQuizzesData?.quizzes || [];
+
+  // Get active lessons from Activated quizzes
+  const activeLessons = useMemo(() => {
+    const lessonSet = new Set();
+    allQuizzes.forEach(quiz => {
+      const itemState = quiz.state || quiz.account_state || 'Activated';
+      if (itemState === 'Activated') {
+        if (quiz.lesson) lessonSet.add(quiz.lesson);
+      }
+    });
+    return lessonSet;
+  }, [allQuizzes]);
+
   // Fetch quiz performance chart data using API endpoint
   const { data: performanceData, isLoading: isChartLoading } = useQuery({
     queryKey: ['quiz-performance', searchId],
@@ -55,7 +82,21 @@ export default function PreviewStudentQuizzes() {
     retry: 1,
   });
 
-  const chartData = performanceData?.chartData || [];
+  const rawChartData = performanceData?.chartData || [];
+
+  // Filter chart data to only include Activated lessons
+  const chartData = useMemo(() => {
+    if (!Array.isArray(rawChartData) || rawChartData.length === 0) return [];
+    if (activeLessons.size === 0) return rawChartData; // If no active lessons, show all
+    
+    return rawChartData.filter(item => {
+      const label = (item.lesson_name || item.lesson || '').toString().toLowerCase();
+      if (!label) return false;
+      return Array.from(activeLessons).some(lesson =>
+        label.includes(String(lesson).toLowerCase())
+      );
+    });
+  }, [rawChartData, activeLessons]);
 
   const resetQuizMutation = useMutation({
     mutationFn: async ({ studentId, quizId }) => {

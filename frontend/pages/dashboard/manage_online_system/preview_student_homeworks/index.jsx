@@ -37,6 +37,33 @@ export default function PreviewStudentHomeworks() {
     enabled: !!searchId && !!student,
   });
 
+  // Fetch all homeworks to check state for filtering
+  const { data: allHomeworksData } = useQuery({
+    queryKey: ['all-homeworks'],
+    queryFn: async () => {
+      const response = await apiClient.get('/api/homeworks');
+      return response.data;
+    },
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchOnMount: false,
+  });
+
+  const allHomeworks = allHomeworksData?.homeworks || [];
+
+  // Get active lessons from Activated homeworks
+  const activeLessons = useMemo(() => {
+    const lessonSet = new Set();
+    allHomeworks.forEach(homework => {
+      const itemState = homework.state || homework.account_state || 'Activated';
+      if (itemState === 'Activated') {
+        if (homework.lesson) lessonSet.add(homework.lesson);
+      }
+    });
+    return lessonSet;
+  }, [allHomeworks]);
+
   // Fetch homework performance chart data using API endpoint
   const { data: performanceData, isLoading: isChartLoading } = useQuery({
     queryKey: ['homework-performance', searchId],
@@ -58,7 +85,21 @@ export default function PreviewStudentHomeworks() {
     retry: 1,
   });
 
-  const chartData = performanceData?.chartData || [];
+  const rawChartData = performanceData?.chartData || [];
+
+  // Filter chart data to only include Activated lessons
+  const chartData = useMemo(() => {
+    if (!Array.isArray(rawChartData) || rawChartData.length === 0) return [];
+    if (activeLessons.size === 0) return rawChartData; // If no active lessons, show all
+    
+    return rawChartData.filter(item => {
+      const label = (item.lesson_name || item.lesson || '').toString().toLowerCase();
+      if (!label) return false;
+      return Array.from(activeLessons).some(lesson =>
+        label.includes(String(lesson).toLowerCase())
+      );
+    });
+  }, [rawChartData, activeLessons]);
 
   // Reset homework mutation
   const resetHomeworkMutation = useMutation({

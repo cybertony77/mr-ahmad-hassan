@@ -339,11 +339,11 @@ export default function MyHomeworks() {
   // Track which homeworks have already had deadline penalties applied (to prevent duplicate scoring)
   const deadlinePenaltiesAppliedRef = useRef(new Set());
   
-  // Check deadlines and update student weeks if needed
+  // Check deadlines and update student lessons if needed
   useEffect(() => {
     if (!profile?.id || homeworks.length === 0) return;
-    // Wait for profile lessons to be loaded before checking deadlines
-    if (!profile?.lessons) return;
+    // Allow the check to proceed even if lessons is undefined - we'll treat it as empty object
+    // The API will create the lesson if it doesn't exist
 
     const checkDeadlines = async () => {
       for (const homework of homeworks) {
@@ -358,7 +358,27 @@ export default function MyHomeworks() {
           if (isDeadlinePassed(homework.deadline_date)) {
             const lessonName = homework.lesson.trim();
             // Check current lesson data to see if we need to update
-            const lessonData = profile?.lessons?.[lessonName];
+            let lessonData = profile?.lessons?.[lessonName];
+            
+            // Ensure lesson exists - if not, create it with default schema
+            if (!lessonData) {
+              try {
+                // Create lesson with default schema by calling the API
+                // The API will create the lesson if it doesn't exist
+                await apiClient.post(`/api/students/${profile.id}/hw`, {
+                  lesson: lessonName,
+                  hwDone: false
+                });
+                // Refresh profile to get the newly created lesson
+                const profileResponse = await apiClient.get('/api/auth/me');
+                if (profileResponse.data && profileResponse.data.lessons) {
+                  lessonData = profileResponse.data.lessons[lessonName];
+                }
+              } catch (createErr) {
+                console.error(`Error creating lesson ${lessonName}:`, createErr);
+                continue; // Skip this homework if we can't create the lesson
+              }
+            }
             
             // Protected values that should never be overwritten
             const protectedHwDoneValues = [true, "Not Completed", "No Homework"];
@@ -406,12 +426,30 @@ export default function MyHomeworks() {
                   }
                 }
                 
-                if (!alreadyApplied) {
                 // Mark as applied immediately to prevent duplicate calls
                 deadlinePenaltiesAppliedRef.current.add(deadlineKey);
                 
                 console.log(`[DEADLINE] Setting hwDone to false for homework ${homework._id}, lesson ${lessonName}`);
                 
+                // Update hwDone to false (always apply this, regardless of scoring system or alreadyApplied)
+                try {
+                  console.log(`[DEADLINE] Calling API to update hwDone for lesson "${lessonName}"`);
+                  const updateResponse = await apiClient.post(`/api/students/${profile.id}/hw`, {
+                    lesson: lessonName,
+                    hwDone: false
+                  });
+                  console.log(`[DEADLINE] API response:`, updateResponse.data);
+                  
+                  // Refresh profile after update
+                  await queryClient.invalidateQueries(['profile']);
+                  console.log(`[DEADLINE] Successfully updated hwDone in database for lesson "${lessonName}"`);
+                } catch (updateErr) {
+                  console.error(`[DEADLINE] Error updating hwDone for lesson ${lessonName}:`, updateErr);
+                  // Continue even if update fails - don't block scoring
+                }
+                
+                // Recalculate score with hwDone: false rule (only if scoring is enabled and not already applied)
+                if (!alreadyApplied) {
                   // Get previous homework state from history (only if scoring is enabled)
                   let previousHwDone = null;
                   if (isScoringEnabled) {
@@ -433,13 +471,7 @@ export default function MyHomeworks() {
                     }
                   }
                   
-                  // Update hwDone to false (always apply this, regardless of scoring system)
-                await apiClient.put(`/api/students/${profile.id}/hw`, {
-                    lesson: lessonName,
-                    hwDone: false
-                  });
-                    
-                    // Recalculate score with hwDone: false rule (only if scoring is enabled)
+                  // Recalculate score with hwDone: false rule (only if scoring is enabled)
                     if (isScoringEnabled) {
                       try {
                         await apiClient.post('/api/scoring/calculate', {

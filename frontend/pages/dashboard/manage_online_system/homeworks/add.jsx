@@ -31,8 +31,8 @@ export default function AddHomework() {
     questions: [{
       question_text: '',
       question_picture: null,
-      answers: ['A', 'B'],
-      answer_texts: ['', ''],
+      answers: ['A', 'B', 'C', 'D'],
+      answer_texts: ['', '', '', ''],
       correct_answer: '',
       question_explanation: ''
     }]
@@ -349,8 +349,8 @@ export default function AddHomework() {
       questions: [...prev.questions, {
         question_text: '',
         question_picture: null,
-        answers: ['A', 'B'],
-        answer_texts: ['', ''],
+        answers: ['A', 'B', 'C', 'D'],
+        answer_texts: ['', '', '', ''],
         correct_answer: '',
         question_explanation: ''
       }]

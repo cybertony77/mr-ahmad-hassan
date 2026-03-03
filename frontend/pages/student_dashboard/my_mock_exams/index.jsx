@@ -627,7 +627,7 @@ export default function MyMockExams() {
                               gap: '8px'
                             }}
                           >
-                            ❌ Not Done
+                            ❌ Didn't Attend The Exam
                           </button>
                         );
                       }
@@ -695,6 +695,9 @@ export default function MyMockExams() {
           .mock-exam-buttons {
             width: 100%;
             flex-direction: column;
+          }
+          .mock-exam-buttons button {
+            width: 100%;
           }
           .mock-exam-buttons button,
           .mock-exam-buttons a,

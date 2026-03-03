@@ -28,8 +28,8 @@ export default function AddQuiz() {
     questions: [{
       question_text: '',
       question_picture: null,
-      answers: ['A', 'B'],
-      answer_texts: ['', ''],
+      answers: ['A', 'B', 'C', 'D'],
+      answer_texts: ['', '', '', ''],
       correct_answer: '',
       question_explanation: ''
     }] || []

@@ -472,8 +472,22 @@ export default function Homeworks() {
                     <div style={{ color: '#6c757d', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                       {homework.homework_type === 'pdf' ? (
                         <div style={{ padding: '12px 16px', backgroundColor: '#ffffff', border: '2px solid #e9ecef', borderRadius: '8px', fontSize: '0.95rem', color: '#495057', textAlign: 'left', display: 'inline-block', maxWidth: '350px' }}>
-                          <div style={{ fontWeight: '600', marginBottom: '4px' }}>
-                            {`File Name : ${homework.pdf_file_name || 'file'}.pdf`}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                            {(() => {
+                              const itemState = homework.state || homework.account_state || 'Activated';
+                              const stateColor = itemState === 'Activated' ? '#28a745' : '#dc3545';
+                              return (
+                                <>
+                                  <span style={{ color: stateColor, fontWeight: '600' }}>
+                                    {itemState}
+                                  </span>
+                                  <span>•</span>
+                                </>
+                              );
+                            })()}
+                            <div style={{ fontWeight: '600', marginBottom: '4px' }}>
+                              {`File Name : ${homework.pdf_file_name || 'file'}.pdf`}
+                            </div>
                           </div>
                         </div>
                       ) : homework.homework_type === 'pages_from_book' ? (
@@ -488,7 +502,21 @@ export default function Homeworks() {
                           display: 'inline-block',
                           maxWidth: '350px'
                         }}>
-                          <strong>From page {homework.from_page} to page {homework.to_page} in {homework.book_name}</strong>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                            {(() => {
+                              const itemState = homework.state || homework.account_state || 'Activated';
+                              const stateColor = itemState === 'Activated' ? '#28a745' : '#dc3545';
+                              return (
+                                <>
+                                  <span style={{ color: stateColor, fontWeight: '600' }}>
+                                    {itemState}
+                                  </span>
+                                  <span>•</span>
+                                </>
+                              );
+                            })()}
+                            <strong>From page {homework.from_page} to page {homework.to_page} in {homework.book_name}</strong>
+                          </div>
                         </div>
                       ) : (
                         <div style={{
@@ -503,6 +531,18 @@ export default function Homeworks() {
                           maxWidth: '350px'
                         }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                            {(() => {
+                              const itemState = homework.state || homework.account_state || 'Activated';
+                              const stateColor = itemState === 'Activated' ? '#28a745' : '#dc3545';
+                              return (
+                                <>
+                                  <span style={{ color: stateColor, fontWeight: '600' }}>
+                                    {itemState}
+                                  </span>
+                                  <span>•</span>
+                                </>
+                              );
+                            })()}
                             <span>{homework.questions?.length || 0} Question{homework.questions?.length !== 1 ? 's' : ''}</span>
                             <span>•</span>
                             <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
