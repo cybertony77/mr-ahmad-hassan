@@ -71,10 +71,10 @@ export default async function handler(req, res) {
         const studentCourseTrimmed = (studentCourse || '').trim();
         const studentCourseTypeTrimmed = (studentCourseType || '').trim();
         
-        // Get all homeworks and filter by course and courseType
+        // Get all homeworks and filter by course, courseType and activation state
         const allHomeworks = await db.collection('homeworks').find({}).toArray();
         
-        // Filter homeworks by course and courseType
+        // Filter homeworks by course, courseType and activation state
         console.log('🔍 Filtering homeworks. Student course:', studentCourseTrimmed, 'courseType:', studentCourseTypeTrimmed);
         console.log('🔍 Total homeworks before filter:', allHomeworks.length);
         const filteredHomeworks = allHomeworks.filter(hw => {
@@ -84,6 +84,7 @@ export default async function handler(req, res) {
           }
           const hwCourse = (hw.course || '').trim();
           const hwCourseType = (hw.courseType || '').trim();
+          const hwState = (hw.state || hw.account_state || 'Activated');
           
           // Course match: if homework course is "All", it matches any student course
           const courseMatch = hwCourse.toLowerCase() === 'all' || 
@@ -94,8 +95,10 @@ export default async function handler(req, res) {
           const courseTypeMatch = !hwCourseType || 
                                  !studentCourseTypeTrimmed ||
                                  hwCourseType.toLowerCase() === studentCourseTypeTrimmed.toLowerCase();
+          // Activation state: hide deactivated homeworks from students
+          const isActivated = hwState !== 'Deactivated';
           
-          const matches = courseMatch && courseTypeMatch;
+          const matches = courseMatch && courseTypeMatch && isActivated;
           console.log(`🔍 Homework course: "${hwCourse}" courseType: "${hwCourseType}" | Matches: ${matches}`);
           return matches;
         });
@@ -119,6 +122,8 @@ export default async function handler(req, res) {
             courseType: hw.courseType || null,
             lesson: hw.lesson || null,
             lesson_name: hw.lesson_name,
+            // Expose normalized activation state so frontend can safely filter
+            state: hw.state || hw.account_state || 'Activated',
             homework_type: hw.homework_type || 'questions',
             deadline_type: hw.deadline_type || 'no_deadline',
             deadline_date: hw.deadline_date || null,

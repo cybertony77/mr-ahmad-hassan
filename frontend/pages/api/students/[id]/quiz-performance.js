@@ -153,8 +153,14 @@ export default async function handler(req, res) {
     const studentCourseTypeTrimmed = (studentCourseType || '').trim();
     const allQuizzes = await db.collection('quizzes').find({}).toArray();
     
+    // Only consider activated quizzes for performance calculations
+    const activeQuizzes = allQuizzes.filter(qz => {
+      const quizState = (qz.state || qz.account_state || 'Activated');
+      return quizState !== 'Deactivated';
+    });
+    
     // Filter quizzes by course, courseType, and type (only include questions)
-    const filteredQuizzes = allQuizzes.filter(qz => {
+    const filteredQuizzes = activeQuizzes.filter(qz => {
       if (!qz.course || !qz.lesson) return false;
       const quizType = (qz.quiz_type || 'questions').toLowerCase();
       if (quizType !== 'questions') return false;

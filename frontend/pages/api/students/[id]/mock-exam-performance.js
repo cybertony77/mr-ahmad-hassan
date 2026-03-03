@@ -128,8 +128,14 @@ export default async function handler(req, res) {
     const studentCourseTypeTrimmed = (studentCourseType || '').trim();
     const allMockExams = await db.collection('mock_exams').find({}).toArray();
     
+    // Only consider activated mock exams for performance calculations
+    const activeMockExams = allMockExams.filter(me => {
+      const meState = (me.state || me.account_state || 'Activated');
+      return meState !== 'Deactivated';
+    });
+    
     // Filter mock exams by course, courseType, and type (only include questions)
-    const filteredMockExams = allMockExams.filter(me => {
+    const filteredMockExams = activeMockExams.filter(me => {
       if (!me.course || !me.lesson) return false;
       const mockType = (me.mock_exam_type || 'questions').toLowerCase();
       if (mockType !== 'questions') return false;

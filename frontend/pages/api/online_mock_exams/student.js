@@ -71,10 +71,10 @@ export default async function handler(req, res) {
         const studentCourseTrimmed = (studentCourse || '').trim();
         const studentCourseTypeTrimmed = (studentCourseType || '').trim();
         
-        // Get all mock exams and filter by course and courseType
+        // Get all mock exams and filter by course, courseType and activation state
         const allMockExams = await db.collection('mock_exams').find({}).toArray();
         
-        // Filter mock exams by course and courseType
+        // Filter mock exams by course, courseType and activation state
         console.log('🔍 Filtering mock exams. Student course:', studentCourseTrimmed, 'courseType:', studentCourseTypeTrimmed);
         console.log('🔍 Total mock exams before filter:', allMockExams.length);
         const filteredMockExams = allMockExams.filter(me => {
@@ -84,6 +84,7 @@ export default async function handler(req, res) {
           }
           const meCourse = (me.course || '').trim();
           const meCourseType = (me.courseType || '').trim();
+          const meState = (me.state || me.account_state || 'Activated');
           
           // Course match: if mock exam course is "All", it matches any student course
           const courseMatch = meCourse.toLowerCase() === 'all' || 
@@ -94,8 +95,10 @@ export default async function handler(req, res) {
           const courseTypeMatch = !meCourseType || 
                                  !studentCourseTypeTrimmed ||
                                  meCourseType.toLowerCase() === studentCourseTypeTrimmed.toLowerCase();
+          // Activation state: hide deactivated mock exams from students
+          const isActivated = meState !== 'Deactivated';
           
-          const matches = courseMatch && courseTypeMatch;
+          const matches = courseMatch && courseTypeMatch && isActivated;
           console.log(`🔍 Mock exam course: "${meCourse}" courseType: "${meCourseType}" | Matches: ${matches}`);
           return matches;
         });
@@ -119,6 +122,8 @@ export default async function handler(req, res) {
             courseType: me.courseType || null,
             lesson: me.lesson || null,
             lesson_name: me.lesson_name,
+            // Expose normalized activation state so frontend can safely filter
+            state: me.state || me.account_state || 'Activated',
             mock_exam_type: me.mock_exam_type || 'questions',
             deadline_type: me.deadline_type || 'no_deadline',
             deadline_date: me.deadline_date || null,

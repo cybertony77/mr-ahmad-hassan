@@ -71,10 +71,10 @@ export default async function handler(req, res) {
         const studentCourseTrimmed = (studentCourse || '').trim();
         const studentCourseTypeTrimmed = (studentCourseType || '').trim();
         
-        // Get all quizzes and filter by course and courseType
+        // Get all quizzes and filter by course, courseType and activation state
         const allQuizzes = await db.collection('quizzes').find({}).toArray();
         
-        // Filter quizzes by course and courseType
+        // Filter quizzes by course, courseType and activation state
         console.log('🔍 Filtering quizzes. Student course:', studentCourseTrimmed, 'courseType:', studentCourseTypeTrimmed);
         console.log('🔍 Total quizzes before filter:', allQuizzes.length);
         const filteredQuizzes = allQuizzes.filter(quiz => {
@@ -84,6 +84,7 @@ export default async function handler(req, res) {
           }
           const quizCourse = (quiz.course || '').trim();
           const quizCourseType = (quiz.courseType || '').trim();
+          const quizState = (quiz.state || quiz.account_state || 'Activated');
           
           // Course match: if quiz course is "All", it matches any student course
           const courseMatch = quizCourse.toLowerCase() === 'all' || 
@@ -94,8 +95,10 @@ export default async function handler(req, res) {
           const courseTypeMatch = !quizCourseType || 
                                  !studentCourseTypeTrimmed ||
                                  quizCourseType.toLowerCase() === studentCourseTypeTrimmed.toLowerCase();
+          // Activation state: hide deactivated quizzes from students
+          const isActivated = quizState !== 'Deactivated';
           
-          const matches = courseMatch && courseTypeMatch;
+          const matches = courseMatch && courseTypeMatch && isActivated;
           console.log(`🔍 Quiz course: "${quizCourse}" courseType: "${quizCourseType}" | Matches: ${matches}`);
           return matches;
         });
@@ -119,6 +122,8 @@ export default async function handler(req, res) {
             courseType: quiz.courseType || null,
             lesson: quiz.lesson || null,
             lesson_name: quiz.lesson_name,
+            // Expose normalized activation state so frontend can safely filter
+            state: quiz.state || quiz.account_state || 'Activated',
             quiz_type: quiz.quiz_type || 'questions',
             deadline_type: quiz.deadline_type || 'no_deadline',
             deadline_date: quiz.deadline_date || null,

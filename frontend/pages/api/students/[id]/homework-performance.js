@@ -153,8 +153,14 @@ export default async function handler(req, res) {
     const studentCourseTypeTrimmed = (studentCourseType || '').trim();
     const allHomeworks = await db.collection('homeworks').find({}).toArray();
     
+    // Only consider activated homeworks for performance calculations
+    const activeHomeworks = allHomeworks.filter(hw => {
+      const hwState = (hw.state || hw.account_state || 'Activated');
+      return hwState !== 'Deactivated';
+    });
+    
     // Filter homeworks by course, courseType, and type (only include questions)
-    const filteredHomeworks = allHomeworks.filter(hw => {
+    const filteredHomeworks = activeHomeworks.filter(hw => {
       if (!hw.course || !hw.lesson) return false;
       const hwType = (hw.homework_type || 'questions').toLowerCase();
       if (hwType !== 'questions') return false;

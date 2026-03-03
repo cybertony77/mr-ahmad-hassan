@@ -706,7 +706,7 @@ export default function MyQuizzes() {
               Loading chart data...
             </div>
           ) : (
-            <QuizPerformanceChart chartData={chartData} height={400} />
+            <QuizPerformanceChart chartData={filteredChartData} height={400} />
           )}
         </div>
 

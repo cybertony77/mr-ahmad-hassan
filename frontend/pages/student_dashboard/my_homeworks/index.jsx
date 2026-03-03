@@ -651,7 +651,7 @@ export default function MyHomeworks() {
               Loading chart data...
             </div>
           ) : (
-            <HomeworkPerformanceChart chartData={chartData} height={400} />
+            <HomeworkPerformanceChart chartData={filteredChartData} height={400} />
           )}
         </div>
 

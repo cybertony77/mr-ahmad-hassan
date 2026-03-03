@@ -83,7 +83,7 @@ export default function MyMockExams() {
 
   // Hide deactivated mock exams from students
   const visibleMockExams = mockExams.filter(
-    (mockExam) => (mockExam.account_state || 'Activated') !== 'Deactivated'
+    (mockExam) => (mockExam.state || mockExam.account_state || 'Activated') !== 'Deactivated'
   );
 
   // Search and filter states
@@ -419,7 +419,7 @@ export default function MyMockExams() {
               Loading chart data...
             </div>
           ) : (
-            <MockExamPerformanceChart chartData={chartData} height={400} />
+            <MockExamPerformanceChart chartData={filteredChartData} height={400} />
           )}
         </div>
 
