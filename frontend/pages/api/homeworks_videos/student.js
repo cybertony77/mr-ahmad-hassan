@@ -74,7 +74,7 @@ export default async function handler(req, res) {
       // Get all sessions and filter by course and courseType in JavaScript
       const allSessions = await db.collection('homeworks_videos').find({}).toArray();
       
-      // Filter sessions by course and courseType
+      // Filter sessions by course, courseType, and activation state
       console.log('🔍 Filtering homeworks videos. Student course:', studentCourse, 'courseType:', studentCourseType);
       console.log('🔍 Total sessions before filter:', allSessions.length);
       const filteredSessions = allSessions.filter(session => {
@@ -82,6 +82,9 @@ export default async function handler(req, res) {
           console.log('⚠️ Session has no course:', session._id);
           return false;
         }
+        
+        // Normalize activation state (support both new state and legacy account_state)
+        const sessionState = (session.state || session.account_state || 'Activated');
         
         // Check course match: if session course is "All", it matches any student course
         const courseMatch = session.course.toLowerCase() === 'all' || 
@@ -93,8 +96,11 @@ export default async function handler(req, res) {
                                !studentCourseType ||
                                session.courseType.toLowerCase() === studentCourseType.toLowerCase();
         
-        const matches = courseMatch && courseTypeMatch;
-        console.log(`🔍 Session course: "${session.course}", courseType: "${session.courseType || 'none'}" | Matches: ${matches}`);
+        // Only include activated sessions
+        const isActivated = sessionState !== 'Deactivated';
+        
+        const matches = courseMatch && courseTypeMatch && isActivated;
+        console.log(`🔍 Session course: "${session.course}", courseType: "${session.courseType || 'none'}", state: "${sessionState}" | Matches: ${matches}`);
         return matches;
       });
       console.log('✅ Filtered sessions count:', filteredSessions.length);

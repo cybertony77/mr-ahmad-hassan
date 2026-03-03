@@ -93,10 +93,11 @@ export default function OnlineSessions() {
 
   const sessions = sessionsData?.sessions || [];
 
-  // Hide deactivated sessions from students
-  const visibleSessions = sessions.filter(
-    (session) => (session.account_state || 'Activated') !== 'Deactivated'
-  );
+  // Hide deactivated sessions from students (support both new state and legacy account_state)
+  const visibleSessions = sessions.filter((session) => {
+    const effectiveState = session.state || session.account_state || 'Activated';
+    return effectiveState !== 'Deactivated';
+  });
 
   // Search and filter states
   const [searchInput, setSearchInput] = useState('');

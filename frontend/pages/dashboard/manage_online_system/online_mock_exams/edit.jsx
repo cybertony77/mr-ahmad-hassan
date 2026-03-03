@@ -560,6 +560,11 @@ export default function EditMockExam() {
       newErrors.mockExam = '❌ Mock Exam is required';
     }
 
+    // Validate account state
+    if (!accountState || accountState.trim() === '') {
+      newErrors.accountState = '❌ Account State is required';
+    }
+
     // Validate lesson name
     if (!formData.lesson_name || formData.lesson_name.trim() === '') {
       newErrors.lesson_name = '❌ Lesson name is required';
@@ -859,12 +864,21 @@ export default function EditMockExam() {
             </div>
 
             {/* Mock Exam State */}
-            <AccountStateSelect
-              value={accountState}
-              onChange={setAccountState}
-              label="Mock Exam State"
-              placeholder="Select Mock Exam State"
-            />
+            <div style={{ marginBottom: '20px' }}>
+              <AccountStateSelect
+                value={accountState}
+                onChange={setAccountState}
+                label="Mock Exam State"
+                placeholder="Select Mock Exam State"
+                required={true}
+                error={errors.accountState}
+              />
+              {errors.accountState && (
+                <div style={{ color: '#dc3545', fontSize: '0.875rem', marginTop: '4px' }}>
+                  {errors.accountState}
+                </div>
+              )}
+            </div>
 
             {/* Lesson Name */}
             <div style={{ marginBottom: '20px' }}>
