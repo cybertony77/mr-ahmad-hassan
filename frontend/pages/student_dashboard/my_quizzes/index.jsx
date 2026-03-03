@@ -82,6 +82,11 @@ export default function MyQuizzes() {
 
   const quizzes = quizzesData?.quizzes || [];
 
+  // Hide deactivated quizzes from students
+  const visibleQuizzes = quizzes.filter(
+    (quiz) => (quiz.state || quiz.account_state || 'Activated') !== 'Deactivated'
+  );
+
   // Search and filter states
   const [searchInput, setSearchInput] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
@@ -94,7 +99,7 @@ export default function MyQuizzes() {
     const studentCourse = (profile?.course || '').trim();
     const studentCourseType = (profile?.courseType || '').trim();
     
-    quizzes.forEach(quiz => {
+    visibleQuizzes.forEach(quiz => {
       if (quiz.lesson && quiz.lesson.trim()) {
         // Check if quiz matches student's course and courseType
         const quizCourse = (quiz.course || '').trim();
@@ -121,7 +126,7 @@ export default function MyQuizzes() {
   const availableLessons = getAvailableLessons();
 
   // Filter quizzes based on search and filters
-  const filteredQuizzes = quizzes.filter(quiz => {
+  const filteredQuizzes = visibleQuizzes.filter(quiz => {
     // Search filter (by lesson name - case-insensitive)
     if (searchTerm.trim()) {
       const lessonName = quiz.lesson_name || '';
@@ -182,6 +187,24 @@ export default function MyQuizzes() {
   });
 
   const chartData = performanceData?.chartData || [];
+
+  // Only show chart lessons that have at least one Activated quiz
+  const activeLessons = new Set(
+    visibleQuizzes
+      .map(quiz => quiz.lesson)
+      .filter(Boolean)
+  );
+
+  const filteredChartData = Array.isArray(chartData)
+    ? chartData.filter(item => {
+        const label = (item.week || '').toString().toLowerCase();
+        if (!label) return false;
+        if (activeLessons.size === 0) return true;
+        return Array.from(activeLessons).some(lesson =>
+          label.includes(String(lesson).toLowerCase())
+        );
+      })
+    : [];
 
   // Refetch chart data when returning to this page
   useEffect(() => {
@@ -289,15 +312,28 @@ export default function MyQuizzes() {
 
   // Helper function to check if deadline has passed
   const isDeadlinePassed = (deadlineDate) => {
-    if (!deadlineDate) return false;
+    if (!deadlineDate) {
+      console.log(`[DEADLINE] isDeadlinePassed: no deadlineDate provided`);
+      return false;
+    }
     
     try {
       // Parse date in local timezone to avoid timezone shift
       let deadline;
-      if (typeof deadlineDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(deadlineDate)) {
-        // If it's a string in YYYY-MM-DD format, parse it in local timezone
-        const [year, month, day] = deadlineDate.split('-').map(Number);
-        deadline = new Date(year, month - 1, day);
+      if (typeof deadlineDate === 'string') {
+        // Try different date formats
+        if (/^\d{4}-\d{2}-\d{2}$/.test(deadlineDate)) {
+          // YYYY-MM-DD format
+          const [year, month, day] = deadlineDate.split('-').map(Number);
+          deadline = new Date(year, month - 1, day);
+        } else if (/^\d{2}\/\d{2}\/\d{4}$/.test(deadlineDate)) {
+          // MM/DD/YYYY format (e.g., "03/02/2026")
+          const [month, day, year] = deadlineDate.split('/').map(Number);
+          deadline = new Date(year, month - 1, day);
+        } else {
+          // Try parsing as-is
+          deadline = new Date(deadlineDate);
+        }
       } else if (deadlineDate instanceof Date) {
         deadline = new Date(deadlineDate);
       } else {
@@ -308,8 +344,12 @@ export default function MyQuizzes() {
       today.setHours(0, 0, 0, 0);
       deadline.setHours(0, 0, 0, 0);
       
-      return deadline <= today; // Deadline passed if deadline <= today
+      const hasPassed = deadline <= today;
+      console.log(`[DEADLINE] isDeadlinePassed check: deadlineDate="${deadlineDate}", parsed="${deadline.toISOString()}", today="${today.toISOString()}", hasPassed=${hasPassed}`);
+      
+      return hasPassed; // Deadline passed if deadline <= today
     } catch (e) {
+      console.error(`[DEADLINE] Error parsing deadline date "${deadlineDate}":`, e);
       return false;
     }
   };
@@ -319,12 +359,19 @@ export default function MyQuizzes() {
   
   // Check deadlines and update student lessons if needed
   useEffect(() => {
-    if (!profile?.id || quizzes.length === 0) return;
+    console.log(`[DEADLINE] useEffect triggered - profile?.id: ${profile?.id}, quizzes.length: ${quizzes.length}, profile?.lessons:`, profile?.lessons);
+    
+    if (!profile?.id || visibleQuizzes.length === 0) {
+      console.log(`[DEADLINE] useEffect early return - missing profile.id or no quizzes`);
+      return;
+    }
+    
     // Allow the check to proceed even if lessons is undefined - we'll treat it as empty object
     // The API will create the lesson if it doesn't exist
 
     const checkDeadlines = async () => {
-      for (const quiz of quizzes) {
+      console.log(`[DEADLINE] Starting deadline check for ${visibleQuizzes.length} quizzes`);
+      for (const quiz of visibleQuizzes) {
         // Only check if quiz has deadline and is not completed
         if (
           quiz.deadline_type === 'with_deadline' &&
@@ -333,30 +380,14 @@ export default function MyQuizzes() {
           quiz.lesson &&
           quiz.lesson.trim()
         ) {
+          console.log(`[DEADLINE] Checking quiz ${quiz._id}, deadline: ${quiz.deadline_date}, lesson: ${quiz.lesson}`);
           if (isDeadlinePassed(quiz.deadline_date)) {
             const lessonName = quiz.lesson.trim();
+            console.log(`[DEADLINE] Deadline passed for quiz ${quiz._id}, lesson: ${lessonName}`);
+            
             // Check current lesson data to see if we need to update
             let lessonData = profile?.lessons?.[lessonName];
-            
-            // Ensure lesson exists - if not, create it with default schema
-            if (!lessonData) {
-              try {
-                // Create lesson with default schema by calling the API
-                // The API will create the lesson if it doesn't exist
-                await apiClient.post(`/api/students/${profile.id}/quiz_degree`, {
-                  lesson: lessonName,
-                  quizDegree: null
-                });
-                // Refresh profile to get the newly created lesson
-                const profileResponse = await apiClient.get('/api/auth/me');
-                if (profileResponse.data && profileResponse.data.lessons) {
-                  lessonData = profileResponse.data.lessons[lessonName];
-                }
-              } catch (createErr) {
-                console.error(`Error creating lesson ${lessonName}:`, createErr);
-                continue; // Skip this quiz if we can't create the lesson
-              }
-            }
+            console.log(`[DEADLINE] Current lessonData for "${lessonName}":`, lessonData);
             
             // Protected values that should never be overwritten
             // Protected: "Didn't Attend The Quiz", "No Quiz", and any score text (e.g. "8 / 10")
@@ -371,6 +402,7 @@ export default function MyQuizzes() {
             if (lessonData && lessonData.quizDegree !== null && lessonData.quizDegree !== undefined) {
               if (protectedQuizDegreeValues.includes(lessonData.quizDegree) || 
                   isScoreText(lessonData.quizDegree)) {
+                console.log(`[DEADLINE] Skipping quiz ${quiz._id} - protected value or score: ${lessonData.quizDegree}`);
                 // Skip - protected value or score, don't override
                 continue;
               }
@@ -382,14 +414,62 @@ export default function MyQuizzes() {
             // Only update and apply scoring if:
             // 1. We haven't already applied penalty for this quiz (tracked in ref)
             // 2. quizDegree is strictly null (not undefined, not protected values, not score text)
-            const shouldApplyDeadlinePenalty = !deadlinePenaltiesAppliedRef.current.has(deadlineKey) &&
-                                               (!lessonData || 
-                                                lessonData.quizDegree === null);
+            const hasAlreadyApplied = deadlinePenaltiesAppliedRef.current.has(deadlineKey);
+            const quizDegreeIsNull = !lessonData || 
+                                     lessonData.quizDegree === null || 
+                                     lessonData.quizDegree === undefined;
+            const shouldApplyDeadlinePenalty = !hasAlreadyApplied && quizDegreeIsNull;
+            
+            console.log(`[DEADLINE] shouldApplyDeadlinePenalty check:`, {
+              deadlineKey,
+              hasAlreadyApplied,
+              lessonDataExists: !!lessonData,
+              quizDegreeValue: lessonData?.quizDegree,
+              quizDegreeIsNull,
+              shouldApplyDeadlinePenalty
+            });
             
             if (shouldApplyDeadlinePenalty) {
+              // Check ref FIRST to prevent duplicate calls - this is the primary guard
+              if (deadlinePenaltiesAppliedRef.current.has(deadlineKey)) {
+                console.log(`[DEADLINE] Already processing deadline penalty for quiz ${quiz._id}, lesson ${lessonName} - skipping`);
+                continue;
+              }
+              
+              // Mark as applied IMMEDIATELY to prevent duplicate calls
+              deadlinePenaltiesAppliedRef.current.add(deadlineKey);
+              
               try {
-                // Mark as applied immediately to prevent duplicate calls
-                deadlinePenaltiesAppliedRef.current.add(deadlineKey);
+                console.log(`[DEADLINE] Processing deadline penalty for quiz ${quiz._id}, lesson ${lessonName}`);
+                
+                // Ensure lesson exists - if not, create it with default schema BEFORE applying penalty
+                if (!lessonData) {
+                  try {
+                    console.log(`[DEADLINE] Creating lesson "${lessonName}" for student ${profile.id}`);
+                    // Create lesson with default schema by calling the API
+                    // The API will create the lesson if it doesn't exist
+                    await apiClient.post(`/api/students/${profile.id}/quiz_degree`, {
+                      lesson: lessonName,
+                      quizDegree: null
+                    });
+                    // Refresh profile to get the newly created lesson
+                    const profileResponse = await apiClient.get('/api/auth/me');
+                    if (profileResponse.data && profileResponse.data.lessons) {
+                      lessonData = profileResponse.data.lessons[lessonName];
+                      // Update profile state to reflect the new lesson
+                      queryClient.setQueryData(['profile'], (old) => ({
+                        ...old,
+                        lessons: profileResponse.data.lessons
+                      }));
+                    }
+                    console.log(`[DEADLINE] Lesson "${lessonName}" created successfully`);
+                  } catch (createErr) {
+                    console.error(`[DEADLINE] Error creating lesson ${lessonName}:`, createErr);
+                    // Remove from ref if creation failed so it can be retried
+                    deadlinePenaltiesAppliedRef.current.delete(deadlineKey);
+                    continue;
+                  }
+                }
                 
                 console.log(`[DEADLINE] Applying quiz deadline penalty for quiz ${quiz._id}, lesson ${lessonName}`);
                 
@@ -407,12 +487,14 @@ export default function MyQuizzes() {
                   console.log(`[DEADLINE] Successfully updated quizDegree in database for lesson "${lessonName}"`);
                 } catch (updateErr) {
                   console.error(`[DEADLINE] Error updating quizDegree for lesson ${lessonName}:`, updateErr);
-                  // Continue even if update fails - don't block scoring
+                  // Remove from ref if update failed so it can be retried
+                  deadlinePenaltiesAppliedRef.current.delete(deadlineKey);
+                  continue;
                 }
                 
                 // Apply scoring: 0% = -25 points (ONLY if scoring is enabled)
                 if (isScoringEnabled) {
-                  // Check history first to see if deadline penalty was already applied
+                  // Check history to see if deadline penalty was already applied
                   let alreadyApplied = false;
                   try {
                     const historyResponse = await apiClient.post('/api/scoring/get-last-history', {
@@ -425,13 +507,13 @@ export default function MyQuizzes() {
                       const lastHistory = historyResponse.data.history;
                       // Check if this is already a deadline penalty (0%) for this lesson
                       if (lastHistory.data?.percentage === 0 && lastHistory.process_lesson === lessonName) {
-                        // Check if it was applied recently (within last hour) to avoid duplicates
+                        // Check if it was applied recently (within last 5 minutes) to avoid duplicates
                         const historyTime = new Date(lastHistory.timestamp);
                         const now = new Date();
                         const timeDiff = now - historyTime;
-                        if (timeDiff < 3600000) { // 1 hour
+                        if (timeDiff < 300000) { // 5 minutes (reduced from 1 hour to catch rapid duplicates)
                           alreadyApplied = true;
-                          console.log(`[DEADLINE] Deadline penalty already applied for quiz ${quiz._id}, lesson ${lessonName}`);
+                          console.log(`[DEADLINE] Deadline penalty already applied for quiz ${quiz._id}, lesson ${lessonName} (${Math.round(timeDiff/1000)}s ago)`);
                         }
                       }
                     }
@@ -784,7 +866,6 @@ export default function MyQuizzes() {
                       </button>
                     )}
                     {(() => {
-                      if (quiz.quiz_type === 'pdf') return null;
                       // Get quizDegree from weeks database (for display purposes only)
                       const quizDegree = getQuizDegree(quiz.lesson, quiz._id);
                       

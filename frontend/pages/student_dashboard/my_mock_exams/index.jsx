@@ -81,6 +81,11 @@ export default function MyMockExams() {
 
   const mockExams = mockExamsData?.mockExams || [];
 
+  // Hide deactivated mock exams from students
+  const visibleMockExams = mockExams.filter(
+    (mockExam) => (mockExam.account_state || 'Activated') !== 'Deactivated'
+  );
+
   // Search and filter states
   const [searchInput, setSearchInput] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
@@ -92,7 +97,7 @@ export default function MyMockExams() {
   // Just extract unique lesson names to show in the filter dropdown
   const getAvailableLessons = () => {
     const lessonSet = new Set();
-    mockExams.forEach(mockExam => {
+    visibleMockExams.forEach(mockExam => {
       if (mockExam.lesson && mockExam.lesson.trim()) {
         lessonSet.add(mockExam.lesson);
       }
@@ -109,7 +114,7 @@ export default function MyMockExams() {
   const availableLessons = getAvailableLessons();
 
   // Filter mock exams based on search and filters
-  const filteredMockExams = mockExams.filter(mockExam => {
+  const filteredMockExams = visibleMockExams.filter(mockExam => {
     // Search filter (by lesson name - case-insensitive)
     if (searchTerm.trim()) {
       const lessonName = mockExam.lesson_name || '';
@@ -170,6 +175,24 @@ export default function MyMockExams() {
   });
 
   const chartData = performanceData?.chartData || [];
+
+  // Only show chart lessons that have at least one Activated mock exam
+  const activeMockExamLessons = new Set(
+    mockExams
+      .filter(exam => (exam.state || exam.account_state || 'Activated') === 'Activated' && exam.lesson)
+      .map(exam => exam.lesson)
+  );
+
+  const filteredChartData = Array.isArray(chartData)
+    ? chartData.filter(item => {
+        const label = (item.lesson || item.week || '').toString().toLowerCase();
+        if (!label) return false;
+        if (activeMockExamLessons.size === 0) return true;
+        return Array.from(activeMockExamLessons).some(lesson =>
+          label.includes(String(lesson).toLowerCase())
+        );
+      })
+    : [];
 
   // Refetch chart data when returning to this page
   useEffect(() => {
@@ -627,7 +650,7 @@ export default function MyMockExams() {
                               gap: '8px'
                             }}
                           >
-                            ❌ Didn't Attend The Exam
+                            ❌ Not Done
                           </button>
                         );
                       }

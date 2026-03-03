@@ -93,19 +93,26 @@ export default function OnlineSessions() {
 
   const sessions = sessionsData?.sessions || [];
 
+  // Hide deactivated sessions from students
+  const visibleSessions = sessions.filter(
+    (session) => (session.account_state || 'Activated') !== 'Deactivated'
+  );
+
   // Search and filter states
   const [searchInput, setSearchInput] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterLesson, setFilterLesson] = useState('');
   const [filterLessonDropdownOpen, setFilterLessonDropdownOpen] = useState(false);
 
-  // Get available lessons from sessions (only lessons that exist in sessions and match student's course/courseType)
+  // Get available lessons from sessions (only lessons that exist in sessions, are Activated, and match student's course/courseType)
   const getAvailableLessons = () => {
     const lessonSet = new Set();
     const studentCourse = (studentData?.course || '').trim();
     const studentCourseType = (studentData?.courseType || '').trim();
     
     sessions.forEach(session => {
+      const effectiveState = session.state || session.account_state || 'Activated';
+      if (effectiveState === 'Deactivated') return;
       if (session.lesson && session.lesson.trim()) {
         // Check if session matches student's course and courseType
         const sessionCourse = (session.course || '').trim();
@@ -132,7 +139,7 @@ export default function OnlineSessions() {
   const availableLessons = getAvailableLessons();
 
   // Filter sessions based on search and filters
-  const filteredSessions = sessions.filter(session => {
+  const filteredSessions = visibleSessions.filter(session => {
     // Search filter (by lesson name - case-insensitive)
     if (searchTerm.trim()) {
       const lessonName = session.name || '';
@@ -250,7 +257,7 @@ export default function OnlineSessions() {
       const response = await apiClient.post('/api/vvc/check', {
         VVC: vvc,
         session_id: sessionId,
-        session_lesson: pendingVideo.session.lesson || null
+        lesson: pendingVideo.session.lesson || ''
       });
 
       if (response.data.valid) {
