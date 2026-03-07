@@ -110,6 +110,8 @@ export default async function handler(req, res) {
         score: student.score !== null && student.score !== undefined ? student.score : 0,
         lessons: student.lessons || {}, // Include the full lessons object
         payment: student.payment || null, // Include payment data
+        online_sessions: student.online_sessions || [], // Include online_sessions for VVC restore
+        homeworks_videos: student.homeworks_videos || [], // Include homeworks_videos for VHC restore
         online_homeworks: student.online_homeworks || [], // Include online_homeworks for degree lookup
         online_quizzes: student.online_quizzes || [], // Include online_quizzes for degree lookup
         online_mock_exams: student.online_mock_exams || [], // Include online_mock_exams for degree lookup
