@@ -36,7 +36,7 @@ function parseDegreeToNumber(value) {
   return null;
 }
 
-export default function QuizChart({ lessons }) {
+export default function QuizChart({ lessons, chartData }) {
   const [showTooltip, setShowTooltip] = useState(false);
   const [tooltipData, setTooltipData] = useState(null);
   const chartRef = useRef(null);
@@ -68,6 +68,22 @@ export default function QuizChart({ lessons }) {
   }, []);
 
   const data = useMemo(() => {
+    // Priority 1: Use API chart data if available (more accurate, includes online_quizzes)
+    if (chartData && Array.isArray(chartData) && chartData.length > 0) {
+      return chartData
+        .map((item) => {
+          const percentage = item.percentage || 0;
+          const result = item.result || '0 / 0';
+          return {
+            name: item.lesson_name || item.lesson || 'Unknown',
+            degree: percentage,
+            originalDegree: result
+          };
+        })
+        .filter(item => item.degree > 0 || item.originalDegree !== '0 / 0');
+    }
+
+    // Priority 2: Fallback to lessons prop (for backward compatibility)
     if (!lessons) return [];
     return lessons
       .map((l) => {
@@ -79,7 +95,7 @@ export default function QuizChart({ lessons }) {
         };
       })
       .filter(Boolean);
-  }, [lessons]);
+  }, [lessons, chartData]);
 
   if (!data.length) {
     return (

@@ -185,11 +185,11 @@ export default function MyMockExams() {
 
   const filteredChartData = Array.isArray(chartData)
     ? chartData.filter(item => {
-        const label = (item.lesson || item.week || '').toString().toLowerCase();
+        const label = (item.lesson_name || item.lesson || '').toString().toLowerCase();
         if (!label) return false;
         if (activeMockExamLessons.size === 0) return true;
         return Array.from(activeMockExamLessons).some(lesson =>
-          label.includes(String(lesson).toLowerCase())
+          label.includes(String(lesson).toLowerCase()) || String(lesson).toLowerCase().includes(label)
         );
       })
     : [];

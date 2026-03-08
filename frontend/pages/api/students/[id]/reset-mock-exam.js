@@ -62,6 +62,15 @@ export default async function handler(req, res) {
 
     const onlineMockExams = student.online_mock_exams || [];
     
+    // Find the mock exam to get the lesson field
+    const mockExamToReset = onlineMockExams.find(
+      me => {
+        const meIdStr = me.mock_exam_id ? String(me.mock_exam_id) : null;
+        const queryIdStr = String(mock_exam_id);
+        return meIdStr === queryIdStr;
+      }
+    );
+
     // Remove the mock exam from the array
     const updatedMockExams = onlineMockExams.filter(
       me => {
@@ -71,12 +80,33 @@ export default async function handler(req, res) {
       }
     );
 
+    // Prepare update object
+    const updateFields = {
+      online_mock_exams: updatedMockExams
+    };
+
+    // Also reset in mockExams array if lesson field exists
+    if (mockExamToReset && mockExamToReset.lesson) {
+      const lesson = mockExamToReset.lesson;
+      const examMatch = lesson.match(/Exam\s+(\d+)/i);
+      if (examMatch) {
+        const examIndex = parseInt(examMatch[1], 10) - 1; // "Exam 1" → index 0
+        if (examIndex >= 0 && examIndex < 50) {
+          // Reset the exam index to null values
+          updateFields[`mockExams.${examIndex}`] = {
+            examDegree: null,
+            outOf: null,
+            percentage: null,
+            date: null
+          };
+        }
+      }
+    }
+
     // Update student document
     const updateResult = await db.collection('students').updateOne(
       { id: student_id },
-      { $set: { 
-        online_mock_exams: updatedMockExams
-      } }
+      { $set: updateFields }
     );
 
     if (updateResult.matchedCount === 0) {

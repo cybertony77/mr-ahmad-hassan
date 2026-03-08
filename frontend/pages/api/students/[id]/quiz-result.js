@@ -1,4 +1,4 @@
-import { MongoClient } from 'mongodb';
+import { MongoClient, ObjectId } from 'mongodb';
 import fs from 'fs';
 import path from 'path';
 import { authMiddleware } from '../../../../lib/authMiddleware';
@@ -79,6 +79,18 @@ export default async function handler(req, res) {
     const student = await db.collection('students').findOne({ id: student_id });
     if (!student) {
       return res.status(404).json({ error: 'Student not found' });
+    }
+
+    // Get the quiz document to get the lesson name
+    let lessonName = null;
+    try {
+      const quiz = await db.collection('quizzes').findOne({ _id: new ObjectId(quiz_id) });
+      if (quiz && quiz.lesson) {
+        lessonName = quiz.lesson;
+      }
+    } catch (err) {
+      console.error('Error fetching quiz document:', err);
+      // Continue even if we can't get the lesson name
     }
 
     // Prepare quiz result object
@@ -165,6 +177,49 @@ export default async function handler(req, res) {
             }
           );
         }
+      }
+    }
+
+    // Update lessons object if lesson name is available
+    if (lessonName) {
+      const lessons = student.lessons || {};
+      const lessonKey = lessonName;
+      
+      // Check if lesson already exists
+      if (lessons[lessonKey]) {
+        // Update existing lesson
+        await db.collection('students').updateOne(
+          { id: student_id },
+          {
+            $set: {
+              [`lessons.${lessonKey}.quizDegree`]: result
+            }
+          }
+        );
+      } else {
+        // Create new lesson with default schema
+        const newLesson = {
+          lesson: lessonName,
+          attended: false,
+          lastAttendance: null,
+          lastAttendanceCenter: null,
+          attendanceDate: null,
+          hwDone: false,
+          homework_degree: null,
+          quizDegree: result,
+          comment: null,
+          message_state: false,
+          paid: false
+        };
+        
+        await db.collection('students').updateOne(
+          { id: student_id },
+          {
+            $set: {
+              [`lessons.${lessonKey}`]: newLesson
+            }
+          }
+        );
       }
     }
 

@@ -197,11 +197,11 @@ export default function MyHomeworks() {
 
   const filteredChartData = Array.isArray(chartData)
     ? chartData.filter(item => {
-        const label = (item.week || '').toString().toLowerCase();
+        const label = (item.lesson_name || item.lesson || '').toString().toLowerCase();
         if (!label) return false;
         if (activeLessons.size === 0) return true;
         return Array.from(activeLessons).some(lesson =>
-          label.includes(String(lesson).toLowerCase())
+          label.includes(String(lesson).toLowerCase()) || String(lesson).toLowerCase().includes(label)
         );
       })
     : [];

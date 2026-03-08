@@ -142,7 +142,7 @@ export default function ChartTabs({ lessons, mockExams, onlineMockExams, mockExa
         {active === 'hw' ? (
           <HwChart lessons={normalizedLessons} />
         ) : active === 'quiz' ? (
-          <QuizChart lessons={normalizedLessons} />
+          <QuizChart lessons={normalizedLessons} chartData={null} />
         ) : (
           <MockExamChart mockExams={normalizedMockExams} />
         )}
